@@ -1,5 +1,42 @@
 import { test, expect } from "@playwright/test";
 
+test("cadastro fechado também rejeita envio manual à Server Action", async ({
+  page,
+}) => {
+  await page.goto("/entrar");
+  await expect(
+    page.getByText("Novas contas estarão disponíveis em breve.", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  const button = page.getByRole("button", {
+    name: "Criar minha conta",
+    exact: true,
+  });
+  await expect(button).toBeDisabled();
+  const actionName = await button
+    .locator("..")
+    .locator('input[name^="$ACTION_ID_"]')
+    .first()
+    .getAttribute("name");
+  expect(actionName).toBeTruthy();
+  const response = await page.request.post("/entrar", {
+    multipart: {
+      [actionName!]: "",
+      name: "Cliente fictício",
+      email: "ficticio@example.invalid",
+      password: crypto.randomUUID(),
+      privacy: "on",
+    },
+    headers: { Origin: new URL(page.url()).origin },
+    maxRedirects: 0,
+  });
+  expect(response.status()).toBe(303);
+  expect(decodeURIComponent(response.headers().location)).toContain(
+    "Novas contas estarão disponíveis em breve",
+  );
+});
+
 test("cliente agenda e empresa confirma, comenta, reagenda e cancela", async ({
   page,
 }) => {

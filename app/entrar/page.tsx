@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/ui";
 import { signIn, signUp, sendReset } from "@/lib/actions";
-import { isConfigured } from "@/lib/supabase";
+import { isConfigured, isRegistrationOpen } from "@/lib/supabase";
 import { Notices } from "@/components/notices";
 
 export default async function SignIn({
@@ -79,6 +79,12 @@ export default async function SignIn({
         </section>
         <section className="card stack">
           <h2>Comece com o essencial</h2>
+          {!isRegistrationOpen() && (
+            <p className="notice">
+              Novas contas estarão disponíveis em breve. Enquanto isso,{" "}
+              <Link href="/demo">explore a demonstração</Link>.
+            </p>
+          )}
           <p className="muted">
             Pedimos só nome e e-mail. Nenhum CPF, endereço ou dado sensível.
           </p>
@@ -121,7 +127,10 @@ export default async function SignIn({
               dados serão usados na{" "}
               <Link href="/privacidade">política de privacidade</Link>.
             </label>
-            <button className="button" disabled={!isConfigured()}>
+            <button
+              className="button"
+              disabled={!isConfigured() || !isRegistrationOpen()}
+            >
               Criar minha conta
             </button>
           </form>

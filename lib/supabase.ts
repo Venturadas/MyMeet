@@ -9,6 +9,10 @@ export function isConfigured() {
   );
 }
 
+export function isRegistrationOpen() {
+  return process.env.MYMEET_REGISTRATION_OPEN === "true";
+}
+
 export async function supabase() {
   if (!isConfigured())
     throw new Error("Supabase não configurado. Consulte o README.");

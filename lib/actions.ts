@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { supabase, isConfigured } from "./supabase";
+import { supabase, isConfigured, isRegistrationOpen } from "./supabase";
 
 function feedback(path: string, message: string, error = false): never {
   revalidatePath(path.split("?")[0]);
@@ -43,6 +43,12 @@ export async function signIn(form: FormData) {
   redirect(destination(form.get("next")));
 }
 export async function signUp(form: FormData) {
+  if (!isRegistrationOpen())
+    feedback(
+      "/entrar",
+      "Novas contas estarão disponíveis em breve. Enquanto isso, explore a demonstração.",
+      true,
+    );
   if (!isConfigured())
     feedback(
       "/entrar",
