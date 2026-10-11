@@ -1,0 +1,110 @@
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { z } from "zod";
+import { isConfigured, supabase } from "@/lib/supabase";
+import { changeAppointment } from "@/lib/actions";
+import { dateTime, localDate } from "@/lib/types";
+import { AppShell } from "@/components/app-shell";
+import { SlotPicker, Slot } from "@/components/slot-picker";
+
+export default async function Reschedule({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ date?: string; from?: string }>;
+}) {
+  if (!isConfigured()) redirect("/entrar");
+  const db = await supabase();
+  const {
+    data: { user },
+  } = await db.auth.getUser();
+  if (!user) redirect("/entrar");
+  const { id } = await params;
+  const query = await searchParams;
+  if (!z.uuid().safeParse(id).success) notFound();
+  const { data: a } = await db
+    .from("appointments")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (!a) notFound();
+  const { data: b } = await db
+    .from("business_catalog")
+    .select("*")
+    .eq("id", a.business_id)
+    .single();
+  if (!b) notFound();
+  const today = localDate(b.timezone);
+  const date = z.iso.date().safeParse(query.date).success ? query.date! : today;
+  const max = new Date(`${today}T12:00:00Z`);
+  max.setUTCDate(max.getUTCDate() + 90);
+  const { data: slots, error } = await db.rpc("available_slots", {
+    p_business_id: a.business_id,
+    p_service_id: a.service_id,
+    p_date: date,
+  });
+  const back = query.from === "empresa" ? "/empresa" : "/cliente";
+  return (
+    <AppShell active={query.from === "empresa" ? "empresa" : "cliente"}>
+      <div className="page-intro">
+        <span className="eyebrow">Um novo horário</span>
+        <h1>Reagendar {a.service_name}</h1>
+        <p className="muted">
+          Atual: {dateTime(a.starts_at, b.timezone)} · {b.name}
+        </p>
+      </div>
+      {!["pending", "confirmed"].includes(a.status) ? (
+        <p className="notice">Este agendamento não permite reagendamento.</p>
+      ) : (
+        <div className="grid-2">
+          <form className="card stack" method="get">
+            <input type="hidden" name="from" value={query.from || ""} />
+            <label className="field">
+              Nova data
+              <input
+                name="date"
+                type="date"
+                min={today}
+                max={max.toISOString().slice(0, 10)}
+                defaultValue={date}
+                required
+              />
+            </label>
+            <button className="button button-secondary">
+              Consultar horários
+            </button>
+          </form>
+          <form className="card stack" action={changeAppointment}>
+            <input name="appointment_id" type="hidden" value={id} />
+            <input name="action" type="hidden" value="reschedule" />
+            <input name="return_to" type="hidden" value={back} />
+            {error ? (
+              <p className="notice error">
+                Não foi possível consultar a disponibilidade. O serviço pode
+                estar inativo.
+              </p>
+            ) : (
+              <SlotPicker
+                slots={(slots || []) as Slot[]}
+                timezone={b.timezone}
+              />
+            )}
+            <p className="muted">
+              O valor original será preservado. A duração seguirá a configuração
+              atual do serviço. Ao trocar o horário, a reserva volta a aguardar
+              confirmação.
+            </p>
+            <button
+              className="button"
+              disabled={Boolean(error) || !slots?.length}
+            >
+              Salvar novo horário
+            </button>
+          </form>
+        </div>
+      )}
+      <Link href={back}>Voltar para minha agenda</Link>
+    </AppShell>
+  );
+}

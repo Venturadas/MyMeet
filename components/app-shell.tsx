@@ -1,0 +1,49 @@
+import Link from "next/link";
+import { Logo } from "@/components/ui";
+import { signOut } from "@/lib/actions";
+
+export function AppShell({
+  children,
+  active,
+}: {
+  children: React.ReactNode;
+  active?: string;
+}) {
+  return (
+    <>
+      <header className="app-header">
+        <nav className="container nav" aria-label="Navegação principal">
+          <Link href="/" aria-label="MyMeet, início">
+            <Logo />
+          </Link>
+          <div className="inline">
+            <Link
+              aria-current={active === "cliente" ? "page" : undefined}
+              href="/cliente"
+            >
+              Meus agendamentos
+            </Link>
+            <Link
+              aria-current={active === "empresa" ? "page" : undefined}
+              href="/empresa"
+            >
+              Minha empresa
+            </Link>
+            <form action={signOut}>
+              <button className="button button-secondary" type="submit">
+                Sair
+              </button>
+            </form>
+          </div>
+        </nav>
+      </header>
+      <main id="main" className="container workspace stack">
+        {children}
+      </main>
+      <footer className="container footer">
+        <span>MyMeet · Seu tempo, bem agendado.</span>
+        <Link href="/privacidade">Privacidade e seus dados</Link>
+      </footer>
+    </>
+  );
+}

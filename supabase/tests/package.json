@@ -1,0 +1,11 @@
+{
+  "name": "mymeet-database-security-tests",
+  "private": true,
+  "scripts": {
+    "test": "bash ./run-local.sh"
+  },
+  "devDependencies": {
+    "embedded-postgres": "17.10.0-beta.17",
+    "pg": "8.16.3"
+  }
+}
