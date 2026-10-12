@@ -3,7 +3,7 @@
  * Run: npm ci && npm test; or PG_BIN=/path/to/bin npm test.
  */
 const assert = require('node:assert/strict');
-const { readFileSync } = require('node:fs');
+const { readFileSync, readdirSync } = require('node:fs');
 const path = require('node:path');
 const { Client } = require('pg');
 
@@ -79,7 +79,10 @@ async function main() {
   const existingUsers = ['20000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000002'];
   await admin.query('insert into auth.users(id,email,raw_user_meta_data) values ($1,$2,$3),($4,$5,$6)',
     [existingUsers[0],'existing@example.test',{display_name:'  Cliente Existente  '},existingUsers[1],'fallback@example.test',{display_name:' '}]);
-  await admin.query(readFileSync(path.join(__dirname, '../migrations/202610110001_mymeet.sql'), 'utf8'));
+  const migrationsDir = path.join(__dirname, '../migrations');
+  const migrations = readdirSync(migrationsDir).filter(name => name.endsWith('.sql')).sort();
+  check(migrations.length > 0, 'At least one migration must be present');
+  for (const migration of migrations) await admin.query(readFileSync(path.join(migrationsDir, migration), 'utf8'));
   equal((await as(existingUsers[0],'select display_name from public.profiles')).rows[0].display_name,'Cliente Existente','Migration backfills existing auth accounts');
   equal((await as(existingUsers[1],'select display_name from public.profiles')).rows[0].display_name,'Cliente','Existing empty display name uses safe fallback');
   for (const [key, id] of Object.entries(ids)) {
@@ -125,6 +128,50 @@ async function main() {
   await rejects(ids.hostA, `insert into public.business_hours(business_id,weekday,start_time,end_time) values ($1,1,'09:00','17:00')
     on conflict (business_id,weekday) do update set business_id=excluded.business_id,weekday=excluded.weekday,start_time=excluded.start_time,end_time=excluded.end_time`, [businesses.B], ['42501'], 'Hours upsert cannot update foreign business');
   await rejects(ids.hostA, 'update public.business_hours set business_id=$1 where business_id=$2 and weekday=1', [businesses.B,businesses.A], ['42501'], 'Hours cannot be transferred to another business');
+
+  // Saving a week is one RPC: a rejected INSERT must restore the preceding DELETE.
+  const saveHoursSql = 'select public.save_business_hours($1::jsonb)';
+  const readHours = async business => (await as(null, `select weekday,start_time::text,end_time::text
+    from public.business_hours where business_id=$1 order by weekday`, [business])).rows;
+  const originalBHours = await readHours(businesses.B);
+  const replacementWeek = [
+    {weekday:1,start_time:'10:00',end_time:'14:00'},
+    {weekday:6,start_time:'11:00',end_time:'16:00'},
+  ];
+  await as(ids.hostA, saveHoursSql, [JSON.stringify(replacementWeek)]);
+  const savedWeek = replacementWeek.map(hours=>({...hours,start_time:`${hours.start_time}:00`,end_time:`${hours.end_time}:00`}));
+  equal(await readHours(businesses.A),savedWeek,'Hours RPC replaces the entire owned week and removes unlisted days');
+  equal(await readHours(businesses.B),originalBHours,'Replacing host A hours preserves host B week');
+  await rejects(null,saveHoursSql,[JSON.stringify(replacementWeek)],['42501'],'Anonymous users cannot replace business hours');
+  await rejects(ids.alice,saveHoursSql,[JSON.stringify(replacementWeek)],['42501'],'Customer without a company cannot replace business hours');
+  await rejects(ids.hostA,saveHoursSql,[JSON.stringify([{...replacementWeek[0],business_id:businesses.B}])],['22023'],'Hours RPC rejects injected foreign business identifier');
+  equal(await readHours(businesses.B),originalBHours,'Foreign business hours remain unchanged after injection attempt');
+
+  const invalidWeeks = [
+    {hours:[{weekday:7,start_time:'09:00',end_time:'17:00'}],codes:['23514'],reason:'weekday outside 0..6'},
+    {hours:[replacementWeek[0],replacementWeek[0]],codes:['23505'],reason:'duplicate weekdays'},
+    {hours:[{weekday:2,start_time:'09:10',end_time:'17:00'}],codes:['23514'],reason:'start outside quarter-hour intervals'},
+    {hours:[{weekday:2,start_time:'09:00',end_time:'17:10'}],codes:['23514'],reason:'end outside quarter-hour intervals'},
+    {hours:[{weekday:2,start_time:'11:00',end_time:'10:00'}],codes:['23514'],reason:'closing before opening'},
+    {hours:[{weekday:2,start_time:'invalid',end_time:'17:00'}],codes:['22007'],reason:'invalid time text'},
+  ];
+  for (const {hours,codes,reason} of invalidWeeks) {
+    await rejects(ids.hostA,saveHoursSql,[JSON.stringify(hours)],codes,`Invalid week rejected: ${reason}`);
+    equal(await readHours(businesses.A),savedWeek,`Failed ${reason} replacement rolls back deletion of old week`);
+  }
+  for (const invalid of [null,{},'not an array',[null],[{weekday:1,start_time:'09:00'}],
+    [{weekday:'1',start_time:'09:00',end_time:'17:00'}],[{weekday:1,start_time:9,end_time:'17:00'}],
+    [{weekday:1,start_time:'09:00',end_time:null}],
+    Array.from({length:8},(_,weekday)=>({weekday,start_time:'09:00',end_time:'17:00'}))]) {
+    await rejects(ids.hostA,saveHoursSql,[JSON.stringify(invalid)],['22023'],'Malformed or oversized hours JSON rejected');
+  }
+  equal(await readHours(businesses.A),savedWeek,'JSON validation failures preserve saved week');
+  await as(ids.hostA,saveHoursSql,['[]']);
+  equal(await readHours(businesses.A),[],'Empty week disables all owned opening hours');
+  equal(await readHours(businesses.B),originalBHours,'Disabling host A week preserves host B hours');
+  const fullWeek = JSON.stringify(Array.from({length:7},(_,weekday)=>({weekday,start_time:'09:00',end_time:'17:00'})));
+  for (const host of ['A','B']) await as(ids[`host${host}`],saveHoursSql,[fullWeek]);
+  equal(await readHours(businesses.A),originalBHours,'All weekdays restored before availability and appointment tests');
 
   equal((await as(ids.alice, 'select id from public.profiles')).rows.map(row => row.id), [ids.alice], 'Customer sees only own profile');
   equal((await as(ids.hostA, 'select id from public.profiles')).rows.map(row => row.id), [ids.hostA], 'Host cannot inspect customer profiles');

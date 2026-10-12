@@ -1,8 +1,10 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Meus agendamentos" };
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isConfigured, supabase } from "@/lib/supabase";
 import { Appointment, money } from "@/lib/types";
-import { requestErasure } from "@/lib/actions";
+import { requestErasure, saveProfile } from "@/lib/actions";
 import { AppShell } from "@/components/app-shell";
 import { Notices } from "@/components/notices";
 import { Appointments } from "@/components/appointments";
@@ -18,23 +20,32 @@ export default async function Customer({
     data: { user },
   } = await db.auth.getUser();
   if (!user) redirect("/entrar");
-  const [appointments, catalog, profile, spending] = await Promise.all([
-    db
-      .from("appointments")
-      .select("*")
-      .eq("customer_id", user.id)
-      .order("starts_at", { ascending: false })
-      .limit(100),
-    db
-      .from("business_catalog")
-      .select("id,name,slug,description")
-      .order("name")
-      .limit(50),
-    db.from("profiles").select("display_name").eq("id", user.id).single(),
-    db.rpc("get_my_spending"),
-  ]);
+  const [appointments, catalog, profile, spending, privacy] = await Promise.all(
+    [
+      db
+        .from("appointments")
+        .select("*")
+        .eq("customer_id", user.id)
+        .order("starts_at", { ascending: false })
+        .limit(100),
+      db
+        .from("business_catalog")
+        .select("id,name,slug,description")
+        .order("name")
+        .limit(50),
+      db.from("profiles").select("display_name").eq("id", user.id).single(),
+      db.rpc("get_my_spending"),
+      db
+        .from("privacy_requests")
+        .select("id,requested_at,status")
+        .eq("user_id", user.id)
+        .order("requested_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ],
+  );
   const items = (appointments.data || []) as Appointment[];
-  const hasError = [appointments, catalog, profile, spending].some(
+  const hasError = [appointments, catalog, profile, spending, privacy].some(
     (x) => x.error,
   );
   return (
@@ -110,6 +121,28 @@ export default async function Customer({
       </section>
       <section className="card stack">
         <h2>Você tem controle sobre seus dados</h2>
+        <details>
+          <summary>Atualizar meu nome</summary>
+          <form className="stack" action={saveProfile}>
+            <label className="field">
+              Seu nome
+              <input
+                name="display_name"
+                autoComplete="name"
+                minLength={2}
+                maxLength={80}
+                defaultValue={profile.data?.display_name || ""}
+                required
+              />
+            </label>
+            <small>
+              O novo nome vale para os próximos agendamentos. Para corrigir
+              informações de reservas anteriores, fale com o contato de
+              privacidade.
+            </small>
+            <button className="button button-secondary">Salvar meu nome</button>
+          </form>
+        </details>
         <p className="muted">
           Seu e-mail não é mostrado às empresas. Elas acessam somente o nome e
           os detalhes dos agendamentos feitos com elas.
@@ -127,6 +160,24 @@ export default async function Customer({
             imediatamente seus dados. Obrigações legais de retenção serão
             avaliadas.
           </p>
+          {privacy.data && (
+            <p className="notice" role="status">
+              Solicitação registrada em{" "}
+              {new Intl.DateTimeFormat("pt-BR", {
+                dateStyle: "medium",
+                timeZone: "America/Sao_Paulo",
+              }).format(new Date(privacy.data.requested_at))}
+              . Status:{" "}
+              {
+                {
+                  pending: "Recebida",
+                  processing: "Em análise",
+                  completed: "Concluída",
+                }[privacy.data.status as "pending" | "processing" | "completed"]
+              }
+              .
+            </p>
+          )}
           <form action={requestErasure}>
             <button className="button button-secondary">
               Registrar solicitação de exclusão

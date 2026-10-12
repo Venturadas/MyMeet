@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Painel da empresa" };
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isConfigured, supabase } from "@/lib/supabase";

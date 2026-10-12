@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Privacidade" };
 import Link from "next/link";
 import { Logo } from "@/components/ui";
 export default function Privacy() {
@@ -36,10 +38,12 @@ export default function Privacy() {
           solicitações de privacidade.
         </p>
         <p>
-          Supabase hospeda o banco e a autenticação; Vercel pode hospedar a
-          aplicação. A região de hospedagem, transferências internacionais e
-          contratos de tratamento devem ser informados pelo responsável antes do
-          lançamento.
+          Supabase hospeda o banco e a autenticação nos Estados Unidos, na
+          região us-west-2. A aplicação é hospedada pela Vercel, com execução
+          principal na região iad1, também nos Estados Unidos. Isso envolve
+          processamento fora do Brasil. Os provedores tratam os dados para
+          disponibilizar a infraestrutura; o responsável deve manter os
+          contratos e as garantias de transferência internacional aplicáveis.
         </p>
       </section>
       <section className="card stack">
@@ -71,11 +75,31 @@ export default function Privacy() {
           .
         </p>
         <p>
-          A finalidade principal é executar o agendamento solicitado. A base
-          legal aplicável a cada operação, os prazos de retenção e o prazo de
-          resposta às solicitações precisam ser definidos pelo responsável e
-          comunicados antes do uso com clientes reais. Este MVP não deve receber
-          dados reais enquanto essas informações estiverem pendentes.
+          Nome, conta e reservas são usados para atender ao agendamento
+          solicitado e à relação de serviço, incluindo procedimentos
+          preliminares pedidos pelo titular (artigo 7º, V, da LGPD). Registros
+          de segurança servem para proteger o acesso e a integridade do serviço;
+          eventual uso por legítimo interesse exige avaliar necessidade e os
+          direitos do titular.
+        </p>
+        <p>
+          Conta e perfil permanecem durante o uso do serviço e a análise de
+          solicitações. A regra operacional do MVP limita o histórico de
+          reservas encerradas e a auditoria a 12 meses, com revisão mensal pelo
+          responsável. Retenção adicional exige uma obrigação ou justificativa
+          aplicável, documentada. Não há descarte automático neste momento.
+        </p>
+        <p>
+          Solicitações feitas pelo painel são registradas imediatamente. Pedidos
+          de confirmação e acesso completo serão tratados observando o prazo de
+          até 15 dias previsto no artigo 19 da LGPD. Correção, exclusão e outras
+          solicitações são analisadas conforme o caso; você pode acompanhar o
+          status no painel e entrar em contato pelo e-mail acima.
+        </p>
+        <p>
+          O cadastro público está em preparação enquanto o envio de e-mails e a
+          operação de privacidade são concluídos. Esses controles não
+          representam certificação de conformidade jurídica integral.
         </p>
       </section>
       <Link className="button button-secondary" href="/cliente">

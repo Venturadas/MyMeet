@@ -89,22 +89,23 @@ export function Appointments({
                   host={host}
                 />
               )}{" "}
-            {["pending", "confirmed"].includes(a.status) && (
-              <>
-                <Link
-                  className="button button-secondary"
-                  href={`/reagendar/${a.id}${host ? "?from=empresa" : ""}`}
-                >
-                  Reagendar
-                </Link>
-                <Action
-                  appointment={a}
-                  action="cancel"
-                  label="Cancelar"
-                  host={host}
-                />
-              </>
-            )}
+            {["pending", "confirmed"].includes(a.status) &&
+              (host || new Date(a.starts_at) > new Date()) && (
+                <>
+                  <Link
+                    className="button button-secondary"
+                    href={`/reagendar/${a.id}${host ? "?from=empresa" : ""}`}
+                  >
+                    Reagendar
+                  </Link>
+                  <Action
+                    appointment={a}
+                    action="cancel"
+                    label="Cancelar"
+                    host={host}
+                  />
+                </>
+              )}
           </div>
           {host && (
             <details>

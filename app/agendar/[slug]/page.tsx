@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Agendar um serviço" };
 import Link from "next/link";
 import { Logo } from "@/components/ui";
 import { notFound } from "next/navigation";

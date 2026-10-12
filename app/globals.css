@@ -708,7 +708,7 @@ textarea::placeholder {
 }
 .feature-number {
   font-size: 10px;
-  color: #7588a4;
+  color: #526781;
   letter-spacing: 1px;
 }
 .feature-card h3 {
@@ -1955,4 +1955,14 @@ details[open] > summary {
   .prose .card h2 {
     font-size: 21px;
   }
+}
+
+.privacy-checkbox {
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  gap: 0.6rem;
+}
+.privacy-checkbox input {
+  flex-shrink: 0;
+  margin-top: 0.25rem;
 }

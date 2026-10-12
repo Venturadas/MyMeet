@@ -167,6 +167,24 @@ export async function saveBusiness(form: FormData) {
     );
   feedback("/empresa", "Informações da empresa salvas.");
 }
+
+export async function saveProfile(form: FormData) {
+  const { db, user } = await authenticated();
+  const name = z
+    .string()
+    .trim()
+    .min(2)
+    .max(80)
+    .safeParse(form.get("display_name"));
+  if (!name.success)
+    feedback("/cliente", "Informe um nome entre 2 e 80 caracteres.", true);
+  const { error } = await db
+    .from("profiles")
+    .update({ display_name: name.data })
+    .eq("id", user.id);
+  if (error) feedback("/cliente", "Não foi possível atualizar seu nome.", true);
+  feedback("/cliente", "Nome atualizado para seus próximos agendamentos.");
+}
 export async function saveService(form: FormData) {
   const { db, user } = await authenticated();
   const input = z
@@ -210,18 +228,10 @@ export async function saveService(form: FormData) {
   feedback("/empresa", "Serviço salvo.");
 }
 export async function saveHours(form: FormData) {
-  const { db, user } = await authenticated();
-  const { data: business } = await db
-    .from("businesses")
-    .select("id")
-    .eq("owner_id", user.id)
-    .single();
-  if (!business) feedback("/empresa", "Cadastre sua empresa primeiro.", true);
+  const { db } = await authenticated();
   const rows = [];
-  const disabled = [];
   for (let day = 0; day < 7; day++) {
     if (form.get(`day_${day}`) !== "on") {
-      disabled.push(day);
       continue;
     }
     const start = String(form.get(`start_${day}`));
@@ -237,32 +247,18 @@ export async function saveHours(form: FormData) {
         true,
       );
     rows.push({
-      business_id: business.id,
       weekday: day,
       start_time: start,
       end_time: end,
     });
   }
-  if (rows.length) {
-    const { error } = await db
-      .from("business_hours")
-      .upsert(rows, { onConflict: "business_id,weekday" });
-    if (error)
-      feedback("/empresa", "Não foi possível salvar os horários.", true);
-  }
-  if (disabled.length) {
-    const { error } = await db
-      .from("business_hours")
-      .delete()
-      .eq("business_id", business.id)
-      .in("weekday", disabled);
-    if (error)
-      feedback(
-        "/empresa",
-        "Não foi possível atualizar os dias fechados.",
-        true,
-      );
-  }
+  const { error } = await db.rpc("save_business_hours", { p_hours: rows });
+  if (error)
+    feedback(
+      "/empresa",
+      "Não foi possível salvar a disponibilidade. Nenhuma alteração parcial foi aplicada.",
+      true,
+    );
   feedback(
     "/empresa",
     "Disponibilidade atualizada. Agendamentos existentes foram preservados.",

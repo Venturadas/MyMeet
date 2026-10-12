@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Entrar" };
 import Link from "next/link";
 import { Logo } from "@/components/ui";
 import { signIn, signUp, sendReset } from "@/lib/actions";
@@ -122,10 +124,13 @@ export default async function SignIn({
               />
               <small>Ao menos 12 caracteres. Use uma senha exclusiva.</small>
             </label>
-            <label className="inline">
-              <input type="checkbox" name="privacy" required /> Li como meus
-              dados serão usados na{" "}
-              <Link href="/privacidade">política de privacidade</Link>.
+            <label className="inline privacy-checkbox">
+              <input type="checkbox" name="privacy" required />
+              <span>
+                {" "}
+                Li como meus dados serão usados na{" "}
+                <Link href="/privacidade">política de privacidade</Link>.
+              </span>
             </label>
             <button
               className="button"

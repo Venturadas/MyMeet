@@ -1,6 +1,6 @@
 # Banco de dados do MyMeet
 
-Execute `migrations/202610110001_mymeet.sql` em um projeto Supabase novo pelo SQL Editor ou `supabase db push` após vincular o projeto. A migração é transacional, não modifica tabelas existentes e não contém dados nem credenciais. Se houver objetos com os mesmos nomes, revise a compatibilidade antes de aplicar. Não execute os testes de fixtures em um projeto real.
+Em um projeto Supabase novo, aplique os arquivos `migrations/*.sql` em ordem pelo SQL Editor ou use `supabase db push` após vincular o projeto. Em projetos já configurados, aplique somente as migrações pendentes. As migrações são transacionais e não contêm dados nem credenciais. Se houver objetos com os mesmos nomes, revise a compatibilidade antes de aplicar. Não execute os testes de fixtures em um projeto real.
 
 No aplicativo, configure apenas a URL do projeto e a chave **publishable/anon**. Nunca coloque a chave `service_role`, senha PostgreSQL ou token administrativo no navegador, Git, logs ou variáveis públicas como `NEXT_PUBLIC_*`/`VITE_*`. As permissões reais são as políticas RLS e os RPCs no banco.
 
@@ -9,7 +9,7 @@ No aplicativo, configure apenas a URL do projeto e a chave **publishable/anon**.
 - `business_catalog`: catálogo público com `id`, `slug`, `name`, `description`, `timezone`, `created_at`; não expõe o ID do proprietário.
 - `businesses`: uma empresa por proprietário, visível e editável somente por ele. `owner_id` não pode ser trocado.
 - `services`: serviços ativos públicos; o proprietário pode ver os inativos e gerenciar sua própria empresa. Duração: 15–480 minutos, múltiplos de 15; preço em centavos.
-- `business_hours`: chave composta `(business_id, weekday)`, sendo domingo `0` e sábado `6`. Um intervalo por dia, sem turnos noturnos, em múltiplos de 15 minutos. Use upsert com `onConflict: 'business_id,weekday'`.
+- `business_hours`: chave composta `(business_id, weekday)`, sendo domingo `0` e sábado `6`. Um intervalo por dia, sem turnos noturnos, em múltiplos de 15 minutos. Use o RPC `save_business_hours` para substituir a semana de forma atômica.
 - `profiles`: nome de exibição privado, criado pelo trigger de cadastro a partir de `raw_user_meta_data.display_name`. O usuário edita apenas o próprio nome. E-mail fica no Supabase Auth e não é disponibilizado à empresa.
 - `appointments`: cliente e proprietário da empresa podem ler. Todas as escritas passam pelos RPCs. A empresa vê somente os dados do agendamento, incluindo nome informado, serviço, horário, preço e comentário compartilhado; não recebe acesso ao perfil ou e-mail do cliente. `service_name`, `customer_name` e `price_cents` são snapshots criados pelo banco.
 
@@ -18,6 +18,7 @@ RPCs via `supabase.rpc(nome, parâmetros)`:
 | RPC | Acesso e comportamento |
 | --- | --- |
 | `available_slots(p_business_id, p_service_id, p_date)` | Público. Retorna `starts_at`, `ends_at` em intervalos de 15 minutos, respeitando fuso, expediente, duração e reservas. |
+| `save_business_hours(p_hours)` | Empresa autenticada. Array de até 7 objetos `weekday`, `start_time`, `end_time`, sem ID da empresa. Substitui a semana em uma transação; `[]` fecha todos os dias. Uma linha inválida preserva o expediente anterior. |
 | `book_appointment(p_business_id, p_service_id, p_starts_at)` | Autenticado. Usa a identidade do JWT, o próprio nome e preço/duração do serviço. Retorna o agendamento. |
 | `update_appointment(p_appointment_id, p_action, p_starts_at?, p_comment?)` | Empresa: `confirm`, `cancel`, `reschedule`, `complete`, `comment`. Cliente: `cancel`, `reschedule`, antes do início. Retorna o agendamento. |
 | `get_my_spending()` | Autenticado. Total histórico, em centavos, dos serviços concluídos do próprio cliente. |

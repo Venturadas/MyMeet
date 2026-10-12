@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Recuperar senha" };
 import { redirect } from "next/navigation";
 import { isConfigured, supabase } from "@/lib/supabase";
 import { resetPassword } from "@/lib/actions";
