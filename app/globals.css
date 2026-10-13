@@ -25,6 +25,13 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
+p,
+li,
+dt,
+dd,
+small {
+  overflow-wrap: anywhere;
+}
 button,
 input,
 select,
