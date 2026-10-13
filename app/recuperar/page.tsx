@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { isConfigured, supabase } from "@/lib/supabase";
 import { resetPassword } from "@/lib/actions";
 import { Notices } from "@/components/notices";
+import Link from "next/link";
+import { Logo } from "@/components/ui";
 export default async function Recover({
   searchParams,
 }: {
@@ -16,10 +18,16 @@ export default async function Recover({
   } = await db.auth.getUser();
   if (!user) redirect("/entrar");
   return (
-    <main id="main" className="container workspace stack">
-      <h1>Defina uma nova senha</h1>
+    <main id="main" className="container auth-shell stack">
+      <Link className="brand-link" href="/" aria-label="NuvemMeet, início">
+        <Logo />
+      </Link>
+      <div className="page-intro">
+        <h1>Defina uma nova senha</h1>
+        <p className="muted">Use uma senha exclusiva para o NuvemMeet.</p>
+      </div>
       <Notices params={await searchParams} />
-      <form className="card stack" action={resetPassword}>
+      <form className="stack" action={resetPassword}>
         <label className="field">
           Nova senha
           <input
@@ -30,6 +38,7 @@ export default async function Recover({
             maxLength={128}
             required
           />
+          <small>Pelo menos 12 caracteres.</small>
         </label>
         <button className="button">Salvar nova senha</button>
       </form>

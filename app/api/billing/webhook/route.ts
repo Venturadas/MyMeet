@@ -6,6 +6,7 @@ import {
 import { verifyMercadoPagoSignature } from "@/lib/billing-policy";
 
 export const runtime = "nodejs";
+const MAX_BODY_BYTES = 16_384;
 
 function response(status: number) {
   return new NextResponse(null, {
@@ -15,9 +16,11 @@ function response(status: number) {
 }
 
 async function smallBody(request: Request): Promise<unknown> {
-  if (Number(request.headers.get("content-length") || 0) > 8192)
-    throw new Error("body_too_large");
-  if (!request.body) throw new Error("missing_body");
+  if (
+    Number(request.headers.get("content-length") || 0) > MAX_BODY_BYTES ||
+    !request.body
+  )
+    throw new Error("invalid_body");
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];
   let size = 0;
@@ -26,9 +29,9 @@ async function smallBody(request: Request): Promise<unknown> {
       const { value, done } = await reader.read();
       if (done) break;
       size += value.byteLength;
-      if (size > 8192) {
+      if (size > MAX_BODY_BYTES) {
         await reader.cancel();
-        throw new Error("body_too_large");
+        throw new Error("invalid_body");
       }
       chunks.push(value);
     }
@@ -56,28 +59,26 @@ export async function POST(request: Request) {
   } catch {
     return response(400);
   }
-  if (String(body.data?.id) !== id || typeof body.type !== "string")
+  if (
+    !body.data ||
+    typeof body.data !== "object" ||
+    Array.isArray(body.data) ||
+    String(body.data.id) !== id ||
+    body.type !== "payment"
+  )
     return response(400);
   const queryTypes = url.searchParams.getAll("type");
   if (
     queryTypes.length > 1 ||
-    (queryTypes.length === 1 && queryTypes[0] !== body.type)
+    (queryTypes.length === 1 && queryTypes[0] !== "payment")
   )
     return response(400);
-  if (
-    ![
-      "subscription_preapproval",
-      "subscription_authorized_payment",
-      "payment",
-    ].includes(body.type)
-  )
-    return response(200);
   try {
-    await processMercadoPagoNotification(body.type, id);
+    // The signed event is only a notification: GET the current payment at Mercado Pago.
+    await processMercadoPagoNotification(id);
     return response(200);
   } catch {
-    // No body, email, provider response, tokens or secret-bearing URL in logs.
-    // A retryable status lets Mercado Pago redeliver after transient failures.
+    // Retryable response; never log webhook body, payer data or secret-bearing URLs.
     return response(503);
   }
 }

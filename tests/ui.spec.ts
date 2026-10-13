@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 
-test("links de confirmação inválidos não redirecionam para fora do site", async ({
+const publicPaths = ["/", "/entrar", "/empresas", "/planos", "/privacidade"];
+
+test("links de acesso inválidos ficam no site e não podem ser armazenados", async ({
   request,
 }) => {
   const paths = [
@@ -23,22 +25,81 @@ test("links de confirmação inválidos não redirecionam para fora do site", as
   }
 });
 
-test("cadastro fechado também rejeita envio manual à Server Action", async ({
+test("páginas públicas usam NuvemMeet e não oferecem demonstração", async ({
+  page,
+}) => {
+  for (const path of publicPaths) {
+    await page.goto(path);
+    await expect(page).toHaveTitle(/NuvemMeet/);
+    await expect(page.locator("h1")).toHaveCount(1);
+    await expect(page.locator("body")).not.toContainText(
+      /MyMeet|demonstração|dados fictícios/i,
+    );
+    await expect(page.locator('a[href^="/demo"]')).toHaveCount(0);
+  }
+  const response = await page.goto("/demo");
+  expect(response?.status()).toBe(404);
+});
+
+test("início dá acesso direto à busca, ao plano e ao login", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.locator('a[href="/empresas"]').first().click();
+  await expect(page).toHaveURL(/\/empresas$/);
+  await expect(
+    page.getByRole("searchbox", { name: "Nome da empresa" }),
+  ).toBeVisible();
+  await page.goto("/");
+  await page.locator('a[href="/planos"]').first().click();
+  await expect(page).toHaveURL(/\/planos$/);
+  await page.goto("/");
+  await page.locator('a[href="/entrar"]').first().click();
+  await expect(page).toHaveURL(/\/entrar$/);
+});
+
+test("login, conta gratuita e recuperação explicam a configuração pendente", async ({
   page,
 }) => {
   await page.goto("/entrar");
   await expect(
-    page.getByText("Novas contas estarão disponíveis em breve.", {
-      exact: false,
-    }),
+    page.getByRole("button", { name: "Entrar", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.locator('input[autocomplete="current-password"]'),
   ).toBeVisible();
-  const button = page.getByRole("button", {
-    name: "Criar minha conta",
-    exact: true,
-  });
-  await expect(button).toBeDisabled();
-  const actionName = await button
-    .locator("..")
+  await page.getByText("Esqueci minha senha", { exact: true }).click();
+  await expect(
+    page.getByLabel("E-mail da conta", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Enviar recuperação", exact: true }),
+  ).toBeDisabled();
+  await page.getByText("Crie sua conta grátis", { exact: true }).click();
+  await expect(
+    page.locator('input[autocomplete="new-password"]'),
+  ).toBeVisible();
+  await expect(page.locator('input[name="privacy"]')).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Criar conta grátis", exact: true }),
+  ).toBeDisabled();
+  await expect(page.locator("main")).toContainText(/grátis|gratuita/i);
+});
+
+test("envio manual de cadastro não contorna a configuração do backend", async ({
+  page,
+}) => {
+  await page.goto("/entrar");
+  await page.getByText("Crie sua conta grátis", { exact: true }).click();
+  const form = page
+    .locator("form")
+    .filter({
+      has: page.getByRole("button", {
+        name: "Criar conta grátis",
+        exact: true,
+      }),
+    });
+  const actionName = await form
     .locator('input[name^="$ACTION_ID_"]')
     .first()
     .getAttribute("name");
@@ -46,223 +107,147 @@ test("cadastro fechado também rejeita envio manual à Server Action", async ({
   const response = await page.request.post("/entrar", {
     multipart: {
       [actionName!]: "",
-      name: "Cliente fictício",
-      email: "ficticio@example.invalid",
+      name: "Verificação de acesso",
+      email: "verificacao@example.invalid",
       password: crypto.randomUUID(),
       privacy: "on",
+      next: "https://example.invalid",
     },
     headers: { Origin: new URL(page.url()).origin },
     maxRedirects: 0,
   });
   expect(response.status()).toBe(303);
-  expect(decodeURIComponent(response.headers().location)).toContain(
-    "Novas contas estarão disponíveis em breve",
+  const destination = new URL(response.headers().location, page.url());
+  expect(destination.origin).toBe(new URL(page.url()).origin);
+  expect(destination.pathname).toBe("/entrar");
+  expect(destination.searchParams.get("error")).toBeTruthy();
+  expect(destination.searchParams.get("error")).not.toMatch(
+    /demo|demonstração/i,
   );
 });
 
-test("cliente agenda e empresa confirma, comenta, reagenda e cancela", async ({
+test("busca é pública, preserva o termo e rejeita parâmetros repetidos", async ({
   page,
 }) => {
-  await page.goto("/demo");
-  await expect(
-    page.getByText("Demonstração · dados fictícios, nada é enviado"),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "09:00 indisponível", exact: true }),
-  ).toBeDisabled();
-  await page
-    .getByRole("button", { name: "10:00 disponível", exact: true })
-    .click();
-  await page.getByRole("button", { name: "Agendar às 10:00" }).click();
-  await expect(page.getByRole("status")).toContainText(
-    "Seu agendamento de exemplo está aguardando confirmação",
-  );
-  const booked = page
-    .locator(".appointment-card")
-    .filter({ hasText: "14 de outubro · 10:00" });
-  await expect(booked).toHaveCount(1);
-  await expect(booked.locator(".status")).toHaveText("A confirmar");
-  await page.getByRole("button", { name: "Sou empresa" }).click();
-  await booked.getByRole("button", { name: "Confirmar", exact: true }).click();
-  await expect(booked.locator(".status")).toHaveText("Confirmado");
-  await booked.getByRole("button", { name: "Comentário", exact: true }).click();
-  await booked
-    .getByRole("textbox")
-    .fill("Comentário fictício para o próximo encontro.");
-  await booked.getByRole("button", { name: "Salvar alteração" }).click();
-  await expect(booked).toContainText(
-    "Comentário fictício para o próximo encontro.",
-  );
-  await booked.getByRole("button", { name: "Reagendar", exact: true }).click();
-  await booked.getByLabel("Dia", { exact: true }).selectOption("15 de outubro");
-  await booked.getByLabel("Horário", { exact: true }).selectOption("10:00");
-  await booked.getByRole("button", { name: "Salvar alteração" }).click();
-  const rescheduled = page
-    .locator(".appointment-card")
-    .filter({ hasText: "15 de outubro · 10:00" });
-  await expect(rescheduled).toHaveCount(1);
-  await expect(rescheduled.locator(".status")).toHaveText("A confirmar");
-  await rescheduled
-    .getByRole("button", { name: "Cancelar", exact: true })
-    .click();
-  await expect(rescheduled.locator(".status")).toHaveText("Cancelado");
-  await page.getByRole("button", { name: "Sou cliente" }).click();
-  await expect(
-    page.locator(".metric").filter({ hasText: "Quanto já gastei" }),
-  ).toContainText(/R\$\s*120,00/);
-  await page.getByRole("button", { name: "15 Outubro", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "10:00 disponível", exact: true }),
-  ).toBeEnabled();
-  expect(await page.evaluate(() => localStorage.length)).toBe(0);
-  await page.reload();
-  await expect(page.locator(".appointment-card")).toHaveCount(3);
-  await expect(
-    page.getByText("Comentário fictício para o próximo encontro.", {
-      exact: true,
-    }),
-  ).toHaveCount(0);
-});
-
-test("total gasto soma somente serviços concluídos", async ({ page }) => {
-  await page.goto("/demo");
-  const spending = page
-    .locator(".metric")
-    .filter({ hasText: "Quanto já gastei" });
-  await expect(spending).toContainText(/R\$\s*120,00/);
-  await page.getByRole("button", { name: "Sou empresa" }).click();
-  const appointment = page
-    .locator(".appointment-card")
-    .filter({ hasText: "14 de outubro · 09:00" });
-  await appointment
-    .getByRole("button", { name: "Concluir serviço", exact: true })
-    .click();
-  await expect(appointment.locator(".status")).toHaveText("Concluído");
-  await page.getByRole("button", { name: "Sou cliente" }).click();
-  await expect(spending).toContainText(/R\$\s*240,00/);
-});
-
-test("página inicial leva à demo, ao acesso e à privacidade", async ({
-  page,
-}) => {
-  await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Seu tempo,bem agendado.",
-  );
-  await page.getByRole("link", { name: "Explorar a demo" }).click();
-  await expect(page).toHaveURL(/\/demo$/);
-  await page.goto("/");
-  await page.getByRole("link", { name: "Começar agora" }).click();
-  await expect(page).toHaveURL(/\/entrar$/);
-  await expect(
-    page.getByText("O acesso real aguarda a conexão com Supabase.", {
-      exact: false,
-    }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Entrar", exact: true }),
-  ).toBeDisabled();
-  await expect(
-    page.getByRole("button", { name: "Criar minha conta", exact: true }),
-  ).toBeDisabled();
-  await page.goto("/");
-  await page.getByRole("link", { name: "Como cuidamos dos dados" }).click();
-  await expect(page).toHaveURL(/\/privacidade$/);
-  await expect(
-    page.getByRole("heading", { name: "Seus dados têm um propósito." }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Quem pode acessar" }),
-  ).toBeVisible();
-});
-
-test("buscar empresas é público e tem um caminho claro desde a página inicial", async ({
-  page,
-}) => {
-  await page.goto("/");
-  await page.getByRole("link", { name: "Agendar", exact: true }).click();
-  await expect(page).toHaveURL(/\/empresas$/);
+  await page.goto("/empresas");
   await expect(
     page.getByRole("heading", { name: "Encontrar empresas", exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "Encontrar empresas", exact: true }),
-  ).toHaveAttribute("aria-current", "page");
   await expect(
     page.getByRole("button", { name: "Sair", exact: true }),
   ).toHaveCount(0);
   await page
     .getByRole("searchbox", { name: "Nome da empresa" })
-    .fill("Minha empresa");
-  await page.getByRole("button", { name: "Buscar empresas" }).click();
-  await expect(page).toHaveURL(/\/empresas\?q=Minha\+empresa$/);
-  await expect(page.getByRole("searchbox")).toHaveValue("Minha empresa");
-  await expect(
-    page.getByText("A busca de empresas reais aguarda a conexão com o banco.", {
-      exact: false,
-    }),
-  ).toBeVisible();
+    .fill("Empresa 100%_* (nome)");
+  await page
+    .getByRole("button", { name: "Buscar empresas", exact: true })
+    .click();
+  expect(new URL(page.url()).searchParams.get("q")).toBe(
+    "Empresa 100%_* (nome)",
+  );
+  await expect(page.getByRole("searchbox")).toHaveValue(
+    "Empresa 100%_* (nome)",
+  );
+  await expect(page.locator("main")).toContainText(
+    /conexão|configurad|indisponível/i,
+  );
   await expect(
     page.getByRole("heading", { name: "Ainda não há empresas cadastradas" }),
   ).toHaveCount(0);
-  await page.getByRole("link", { name: "Limpar busca" }).click();
+  await page.getByRole("link", { name: "Limpar busca", exact: true }).click();
   await expect(page).toHaveURL(/\/empresas$/);
   await expect(page.getByRole("searchbox")).toHaveValue("");
   await page.goto("/empresas?q=um&q=dois");
-  await expect(
-    page.getByRole("alert").filter({ hasText: "Informe um nome de empresa" }),
-  ).toBeVisible();
+  await expect(page.locator(".notice.error[role=alert]")).toContainText(
+    /nome|80 caracteres/,
+  );
 });
 
-test("painéis protegidos pedem acesso e agenda real informa conexão pendente", async ({
+test("plano diferencia clientes gratuitos de empresa paga sem cobrar sem configuração", async ({
   page,
+}) => {
+  await page.goto("/planos");
+  await expect(page.locator("main")).toContainText(/14,99/);
+  await expect(page.locator("main")).toContainText(/gratuit|grátis/i);
+  await expect(page.locator("main")).toContainText(/Pix/i);
+  await expect(page.locator("main")).not.toContainText(
+    /cobrança automática|recorrente pelo Mercado Pago/i,
+  );
+  await expect(
+    page.locator('form[action="/api/billing/checkout"] button:enabled'),
+  ).toHaveCount(0);
+  const loginLink = page
+    .locator('a[href^="/entrar?next="]')
+    .filter({ hasText: /entrar|assinar/i })
+    .first();
+  await expect(loginLink).toBeVisible();
+  expect(
+    new URL(
+      (await loginLink.getAttribute("href")) || "",
+      page.url(),
+    ).searchParams.get("next"),
+  ).toBe("/planos");
+});
+
+test("painéis, recuperação e reagendamento exigem uma sessão real", async ({
+  page,
+  request,
 }) => {
   for (const path of [
     "/cliente",
     "/empresa",
+    "/recuperar",
     "/reagendar/00000000-0000-4000-8000-000000000001",
   ]) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/entrar(?:\?|$)/);
   }
-  await page.goto("/agendar/estudio-exemplo");
-  await expect(
-    page.getByRole("heading", { name: "A agenda está sendo preparada." }),
-  ).toBeVisible();
-  await expect(
-    page.getByText("O acesso real aguarda a conexão com Supabase."),
-  ).toBeVisible();
+  const exported = await request.get("/api/me/export");
+  expect(exported.status()).toBe(503);
+  expect(exported.headers()["cache-control"]).toContain("no-store");
+  await page.goto("/agendar/empresa-sem-conexao");
+  await expect(page.locator("h1")).toBeVisible();
+  await expect(page.locator('input[name="starts_at"]')).toHaveCount(0);
+  await expect(page.locator('a[href^="/demo"]')).toHaveCount(0);
 });
 
-test("conteúdo cabe em celular de 320px e a demo mantém aviso ao rolar", async ({
+test("privacidade continua acessível e o ícone corresponde à marca", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/privacidade");
+  await expect(page.locator("main")).toContainText(/Contato de privacidade/i);
+  await expect(page.locator("main")).toContainText(/exclusão|apagamento/i);
+  await expect(page.locator("main")).toContainText(/acesso|export/i);
+  const response = await request.get("/icon");
+  expect(response.status()).toBe(200);
+  expect(response.headers()["content-type"]).toContain("image/png");
+  expect((await response.body()).byteLength).toBeLessThan(5000);
+});
+
+test("rotas públicas e estados vazios cabem em celulares de 320 e 390px", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 320, height: 720 });
-  for (const path of [
-    "/",
-    "/demo",
-    "/entrar",
-    "/privacidade",
-    "/empresas",
-    "/agendar/exemplo",
-  ]) {
-    await page.goto(path);
-    await expect(page.locator("main")).toBeVisible();
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth - innerWidth,
-      ),
-      `Transbordamento em ${path}`,
-    ).toBeLessThanOrEqual(0);
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 800 });
+    for (const path of [
+      ...publicPaths,
+      "/agendar/empresa-sem-conexao",
+      "/demo",
+    ]) {
+      await page.goto(path);
+      await expect(page.locator("main")).toBeVisible();
+      if (path === "/entrar") {
+        await page.getByText("Esqueci minha senha", { exact: true }).click();
+        await page.getByText("Crie sua conta grátis", { exact: true }).click();
+      }
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth - innerWidth,
+        ),
+        `Transbordamento em ${path}, ${width}px`,
+      ).toBeLessThanOrEqual(1);
+      await expect(page.locator('a[href^="/demo"]')).toHaveCount(0);
+    }
   }
-  await page.goto("/demo");
-  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  await expect(
-    page.getByText("Demonstração · dados fictícios, nada é enviado"),
-  ).toBeVisible();
-  expect(
-    await page
-      .locator(".demo-banner")
-      .evaluate((element) => element.getBoundingClientRect().top),
-  ).toBe(0);
 });

@@ -14,16 +14,18 @@ export function AppShell({
   return (
     <>
       <header className="app-header">
-        <nav className="container nav" aria-label="Navegação principal">
-          <Link href="/" aria-label="MyMeet, início">
+        <nav className="container app-nav" aria-label="Navegação principal">
+          <Link className="brand-link" href="/" aria-label="NuvemMeet, início">
             <Logo />
           </Link>
-          <div className="inline">
+          <div
+            className={`nav-links${authenticated ? " nav-authenticated" : ""}`}
+          >
             <Link
               aria-current={active === "empresas" ? "page" : undefined}
               href="/empresas"
             >
-              Encontrar empresas
+              Agendar
             </Link>
             {authenticated ? (
               <>
@@ -40,15 +42,23 @@ export function AppShell({
                   Minha empresa
                 </Link>
                 <form action={signOut}>
-                  <button className="button button-secondary" type="submit">
+                  <button className="button button-quiet" type="submit">
                     Sair
                   </button>
                 </form>
               </>
             ) : (
-              <Link className="button button-secondary" href="/entrar">
-                Entrar
-              </Link>
+              <>
+                <Link
+                  aria-current={active === "planos" ? "page" : undefined}
+                  href="/planos"
+                >
+                  Planos
+                </Link>
+                <Link className="button button-secondary" href="/entrar">
+                  Entrar
+                </Link>
+              </>
             )}
           </div>
         </nav>
@@ -57,7 +67,7 @@ export function AppShell({
         {children}
       </main>
       <footer className="container footer">
-        <span>MyMeet · Seu tempo, bem agendado.</span>
+        <span>NuvemMeet</span>
         <Link href="/privacidade">Privacidade e seus dados</Link>
       </footer>
     </>

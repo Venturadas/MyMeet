@@ -1,4 +1,4 @@
-# Banco de dados do MyMeet
+# Banco de dados do NuvemMeet
 
 Em um projeto Supabase novo, aplique os arquivos `migrations/*.sql` em ordem pelo SQL Editor ou use `supabase db push` após vincular o projeto. Em projetos já configurados, aplique somente as migrações pendentes. As migrações são transacionais e não contêm dados nem credenciais. Se houver objetos com os mesmos nomes, revise a compatibilidade antes de aplicar. Não execute os testes de fixtures em um projeto real.
 

@@ -14,7 +14,11 @@ function feedback(path: string, message: string, error = false): never {
 }
 function destination(value: FormDataEntryValue | null) {
   const path = String(value || "/cliente");
-  return path === "/empresa" || path === "/planos" || /^\/agendar\/[a-z0-9-]+$/.test(path) ? path : "/cliente";
+  return path === "/empresa" ||
+    path === "/planos" ||
+    /^\/agendar\/[a-z0-9-]+$/.test(path)
+    ? path
+    : "/cliente";
 }
 async function authenticated() {
   if (!isConfigured()) redirect("/entrar");
@@ -52,7 +56,7 @@ export async function signUp(form: FormData) {
   if (!isRegistrationOpen())
     feedback(
       "/entrar",
-      "Novas contas estarão disponíveis em breve. Enquanto isso, explore a demonstração.",
+      "O cadastro está temporariamente indisponível. Tente novamente em breve.",
       true,
     );
   if (!isConfigured())
@@ -139,6 +143,32 @@ export async function resetPassword(form: FormData) {
 }
 export async function saveBusiness(form: FormData) {
   const { db, user } = await subscribed();
+  const { data: existing, error: existingError } = await db
+    .from("businesses")
+    .select("id,slug,description")
+    .eq("owner_id", user.id)
+    .maybeSingle();
+  if (existingError)
+    feedback(
+      "/empresa",
+      "Não foi possível verificar sua empresa. Tente novamente.",
+      true,
+    );
+  const name = String(form.get("name") || "").trim();
+  const base =
+    name
+      .normalize("NFKD")
+      .replace(/\p{M}/gu, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 47)
+      .replace(/-+$/g, "") || "empresa";
+  const slug = String(
+    form.get("slug") ||
+      existing?.slug ||
+      `${base}-${crypto.randomUUID().slice(0, 8)}`,
+  );
   const input = z
     .object({
       name: z.string().trim().min(2).max(100),
@@ -149,18 +179,17 @@ export async function saveBusiness(form: FormData) {
         .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
       description: z.string().trim().max(500),
     })
-    .safeParse(Object.fromEntries(form));
+    .safeParse({
+      name,
+      slug,
+      description: form.get("description") ?? existing?.description ?? "",
+    });
   if (!input.success)
     feedback(
       "/empresa",
       "Confira o nome e o link da empresa (letras minúsculas, números e hífens).",
       true,
     );
-  const { data: existing } = await db
-    .from("businesses")
-    .select("id")
-    .eq("owner_id", user.id)
-    .maybeSingle();
   const payload = { ...input.data, timezone: "America/Sao_Paulo" };
   const result = existing
     ? await db.from("businesses").update(payload).eq("id", existing.id)
@@ -196,7 +225,7 @@ export async function saveService(form: FormData) {
   const input = z
     .object({
       name: z.string().trim().min(2).max(100),
-      description: z.string().trim().max(500),
+      description: z.string().trim().max(500).default(""),
       duration_minutes: z.coerce.number().int().min(15).max(480).multipleOf(15),
       price: z.string().regex(/^\d{1,6}([.,]\d{1,2})?$/),
     })

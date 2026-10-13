@@ -1,6 +1,6 @@
-# Operação de privacidade do MyMeet
+# Operação de privacidade do NuvemMeet
 
-Responsável informado: Richard. Contato: richardsamiaventura@gmail.com. O cadastro público deve permanecer fechado até SMTP, atendimento dos direitos, retenção, contratos e segurança administrativa estarem preparados. O código não certifica conformidade integral com a LGPD.
+Responsável informado: Richard. Contato: richardsamiaventura@gmail.com. O envio de e-mails está configurado. Atendimento dos direitos, retenção, contratos, backups e segurança administrativa continuam responsabilidades operacionais do responsável. O código não certifica conformidade integral com a LGPD.
 
 ## Rotina do responsável
 
@@ -16,6 +16,7 @@ Antes de processar, confira reservas futuras, a eventual empresa do titular e re
 
 - Para um cliente, avalie cancelamento das reservas futuras, anonimização do nome capturado nos agendamentos, remoção de comentários pessoais e dissociação dos identificadores da auditoria. Excluir somente o usuário no Auth **não** remove os nomes capturados em reservas antigas.
 - Para o proprietário de uma empresa, resolva primeiro os atendimentos e a destinação da empresa/histórico. O banco impede apagar a conta que ainda é proprietária de uma empresa e impede apagar empresas/serviços com reservas. Não desative esses controles para fazer uma exclusão passar.
+- Para um assinante, confirme o estado das cobranças Pix e trate o ledger financeiro antes de remover a conta ou empresa. As chaves estrangeiras financeiras impedem a remoção direta. Não desative esses controles e não exclua uma cobrança pendente/ambígua para tentar gerar outra. Registros financeiros necessários exigem retenção/anonimização documentada conforme as obrigações aplicáveis.
 - Apague a conta pelo Supabase Auth somente quando as relações e dados aplicáveis tiverem sido tratados. Revogue o acesso e confira que perfil, registros pessoais e associações indevidas não permaneceram. Limite qualquer procedimento aos IDs do titular confirmado.
 - Documente a justificativa e o prazo de uma retenção legal excepcional e responda ao titular. Proteja também os registros administrativos; não copie senhas, tokens ou documentos desnecessários para observações.
 
@@ -27,7 +28,7 @@ Antes de abrir para clientes, registre e ajuste esses prazos às obrigações re
 
 ## Hospedagem e segurança
 
-Banco/Auth: Supabase `us-west-2`, Estados Unidos. Aplicação: Vercel `iad1`, Estados Unidos. Revise contratos dos provedores e garantias de transferência internacional; não declare hospedagem brasileira. Defina responsabilidades de MyMeet e empresas sobre atendimento e dados das reservas.
+Banco/Auth: Supabase `us-west-2`, Estados Unidos. Aplicação: Vercel `iad1`, Estados Unidos. Revise contratos dos provedores e garantias de transferência internacional; não declare hospedagem brasileira. Defina responsabilidades de NuvemMeet e empresas sobre atendimento e dados das reservas.
 
 Ative MFA para as contas administrativas Supabase/Vercel/GitHub, limite quem tem acesso e preserve as políticas RLS. Nunca entregue `service_role` aos hosts. Configure uma rotina de backup protegido e teste a restauração em ambiente separado antes de operar com dados reais; um backup só é útil se a restauração funcionar. A disponibilidade/retencão dos backups do provedor depende do plano contratado e não foi certificada por estes testes.
 
@@ -37,4 +38,4 @@ Em caso de incidente, restrinja acessos e registre fatos, impacto, titulares afe
 
 ## Abrir o cadastro
 
-Após envio de e-mail validado e preparação operacional acima, habilite signup no Supabase mantendo confirmação de e-mail, senhas de 12 caracteres e limites de tentativas. Defina `MYMEET_REGISTRATION_OPEN=true` na Vercel e publique um novo build. Primeiro teste cadastro/confirmar/login e recuperação de senha com uma conta de teste autorizada. Não desabilite a confirmação de e-mail para contornar falhas SMTP.
+Após envio de e-mail validado e preparação operacional acima, habilite signup no Supabase mantendo confirmação de e-mail, senhas de 12 caracteres e limites de tentativas. Defina `NUVEMMEET_REGISTRATION_OPEN=true` na Vercel e publique um novo build. Primeiro teste cadastro/confirmar/login e recuperação de senha com uma conta de teste autorizada. Não desabilite a confirmação de e-mail para contornar falhas SMTP.

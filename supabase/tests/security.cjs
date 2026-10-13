@@ -1,5 +1,5 @@
 /* Real PostgreSQL integration tests. NEVER point this at a Supabase project.
- * Only an empty local disposable database named mymeet_security_* is accepted.
+ * Only an empty local disposable database named nuvemmeet_security_* is accepted.
  * Run: npm ci && npm test; or PG_BIN=/path/to/bin npm test.
  */
 const assert = require('node:assert/strict');
@@ -11,8 +11,8 @@ const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error('Use run-local.sh or an empty disposable DATABASE_URL.');
 const url = new URL(connectionString);
 const databaseName = decodeURIComponent(url.pathname.slice(1));
-if (!['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname) || !/^mymeet_security_[a-z0-9_]+$/.test(databaseName)) {
-  throw new Error('Refusing database: only localhost and mymeet_security_* disposable databases are allowed.');
+if (!['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname) || !/^nuvemmeet_security_[a-z0-9_]+$/.test(databaseName)) {
+  throw new Error('Refusing database: only localhost and nuvemmeet_security_* disposable databases are allowed.');
 }
 
 const admin = new Client({ connectionString });
@@ -66,14 +66,15 @@ async function main() {
     do $$ begin
       if not exists (select 1 from pg_catalog.pg_roles where rolname='anon') then create role anon nologin; end if;
       if not exists (select 1 from pg_catalog.pg_roles where rolname='authenticated') then create role authenticated nologin; end if;
+      if not exists (select 1 from pg_catalog.pg_roles where rolname='service_role') then create role service_role nologin bypassrls; end if;
     end $$;
     create schema auth;
     create table auth.users(id uuid primary key, email text, raw_user_meta_data jsonb not null default '{}'::jsonb);
     create function auth.uid() returns uuid language sql stable as $$
       select nullif(current_setting('request.jwt.claim.sub', true),'')::uuid
     $$;
-    grant usage on schema auth, public to anon, authenticated;
-    grant execute on function auth.uid() to anon, authenticated;
+    grant usage on schema auth, public to anon, authenticated, service_role;
+    grant execute on function auth.uid() to anon, authenticated, service_role;
   `);
   check((await admin.query("select count(*)::int as count from pg_roles where rolname in ('anon','authenticated') and (rolsuper or rolbypassrls)")).rows[0].count === 0, 'Test roles cannot bypass RLS');
   const existingUsers = ['20000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000002'];
@@ -89,6 +90,10 @@ async function main() {
     await admin.query('insert into auth.users(id,email,raw_user_meta_data) values ($1,$2,$3)', [id, `${key.toLowerCase()}@example.test`, { display_name: { hostA: 'Empresa A', hostB: 'Empresa B', alice: 'Alice Cliente', bob: 'Bob Cliente' }[key] }]);
   }
 
+  // Local privileged fixtures grant only these synthetic hosts paid access.
+  for (const host of [ids.hostA,ids.hostB]) await admin.query(
+    `insert into public.business_subscriptions(user_id,status,current_period_end) values ($1,'active',now()+interval '30 days')`,[host]);
+
   const businesses = {};
   for (const name of ['A','B']) {
     businesses[name] = (await as(ids[`host${name}`], `insert into public.businesses(owner_id,slug,name)
@@ -100,7 +105,7 @@ async function main() {
   equal((await as(ids.alice, 'select * from public.businesses')).rowCount, 0, 'Customer cannot inspect private business records');
   equal((await as(ids.hostA, 'update public.businesses set name=$1 where id=$2 returning id', ['Intrusão', businesses.B])).rowCount, 0, 'Host cannot alter another business');
   await rejects(ids.hostA, 'update public.businesses set owner_id=$1 where id=$2', [ids.hostB, businesses.A], ['42501'], 'Owner transfer column is not writable');
-  await rejects(ids.hostA, 'update public.businesses set timezone=$1 where id=$2', ['Invalid/MyMeet', businesses.A], ['22023'], 'Invalid timezone rejected');
+  await rejects(ids.hostA, 'update public.businesses set timezone=$1 where id=$2', ['Invalid/NuvemMeet', businesses.A], ['22023'], 'Invalid timezone rejected');
   const catalog = await as(null, 'select * from public.business_catalog order by slug');
   equal(catalog.rowCount, 2, 'Anonymous users can find public companies');
   check(!catalog.fields.some(field => field.name === 'owner_id'), 'Public catalogue never exposes owner UUID');
@@ -317,7 +322,8 @@ async function main() {
   await rejects(null,'select * from public.audit_events',[],['42501'],'Anonymous users cannot read audit records');
   await rejects(ids.hostA,"insert into public.audit_events(appointment_id,action) values ($1,'forged')",[aliceBooking.id],['42501'],'Host cannot forge audit events');
   check((await admin.query("select count(*)::int as count from pg_tables where schemaname='public' and not rowsecurity")).rows[0].count===0,'Every application table enables RLS');
-  console.log(`PASS: ${assertions} assertions on real PostgreSQL; tenant isolation, trusted snapshots, races, lifecycle, privacy.`);
+  await require('./billing-analytics.cjs')({admin,as,rejects,check,equal,Client,connectionString,ids,businesses,services,dates});
+  console.log(`PASS: ${assertions} assertions on real PostgreSQL; tenant isolation, trusted snapshots, races, lifecycle, privacy, Pix entitlements and real analytics.`);
 }
 
 main().catch(error => { console.error(`FAIL: ${error.stack}`); process.exitCode=1; }).finally(()=>admin.end());

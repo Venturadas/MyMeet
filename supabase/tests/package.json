@@ -1,5 +1,5 @@
 {
-  "name": "mymeet-database-security-tests",
+  "name": "nuvemmeet-database-security-tests",
   "private": true,
   "scripts": {
     "test": "bash ./run-local.sh"

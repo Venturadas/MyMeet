@@ -3,11 +3,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "MyMeet · Seu tempo, bem agendado",
-    template: "%s · MyMeet",
+    default: "NuvemMeet · Agenda online para seu negócio",
+    template: "%s · NuvemMeet",
   },
   description:
-    "Uma agenda simples para empresas e clientes. Escolha seu serviço, encontre um horário e acompanhe seu agendamento.",
+    "Receba reservas, organize horários e acompanhe seus atendimentos com o NuvemMeet. Uma agenda simples para usar no computador e no celular.",
+  applicationName: "NuvemMeet",
 };
 export default function RootLayout({
   children,

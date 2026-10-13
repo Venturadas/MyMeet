@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const config: NextConfig = {
   poweredByHeader: false,
   async redirects() {
-    return [{ source: "/favicon.ico", destination: "/icon.svg", permanent: true }];
+    return [{ source: "/favicon.ico", destination: "/icon", permanent: false }];
   },
   async headers() {
     return [

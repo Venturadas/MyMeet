@@ -10,7 +10,7 @@ export function isConfigured() {
 }
 
 export function isRegistrationOpen() {
-  return process.env.MYMEET_REGISTRATION_OPEN === "true";
+  return process.env.NUVEMMEET_REGISTRATION_OPEN === "true";
 }
 
 export async function supabase() {

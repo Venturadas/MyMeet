@@ -5,14 +5,14 @@ import { Logo } from "@/components/ui";
 export default function Privacy() {
   return (
     <main id="main" className="container workspace stack prose">
-      <Link href="/" aria-label="MyMeet, início">
+      <Link href="/" aria-label="NuvemMeet, início">
         <Logo />
       </Link>
       <div className="page-intro">
         <span className="eyebrow">Privacidade por padrão</span>
         <h1>Seus dados têm um propósito.</h1>
         <p className="muted">
-          Informações claras sobre o uso dos dados no MyMeet.
+          Informações claras sobre o uso dos dados no NuvemMeet.
         </p>
       </div>
       <section className="card stack">
@@ -28,12 +28,12 @@ export default function Privacy() {
           de cartão. Não inclua dados sensíveis nos campos de texto.
         </p>
         <p>
-          Para empresas assinantes, registramos o estado da assinatura,
-          período de acesso e identificadores da cobrança. O Mercado Pago
-          processa os pagamentos e recebe o e-mail da conta e os dados
-          necessários ao contrato. Dados de cartão são informados no ambiente
-          do provedor e não são armazenados pelo MyMeet. A conta de cliente é
-          gratuita; valores de serviços agendados não são cobrados pelo MyMeet.
+          Para empresas assinantes, registramos o estado da assinatura, período
+          de acesso e identificadores da cobrança. O Mercado Pago processa os
+          pagamentos e recebe o e-mail da conta e os dados necessários ao
+          pagamento Pix. Não coletamos ou armazenamos dados de cartão. A conta
+          de cliente é gratuita; valores de serviços agendados não são cobrados
+          pelo NuvemMeet.
         </p>
       </section>
       <section className="card stack">
@@ -42,7 +42,7 @@ export default function Privacy() {
           Você acessa seu perfil e suas reservas. A empresa recebe seu nome e os
           detalhes dos agendamentos realizados com ela, sem acesso ao seu
           e-mail, seu perfil ou reservas de outras empresas. O responsável pelo
-          MyMeet tem acesso administrativo para operar o serviço e atender
+          NuvemMeet tem acesso administrativo para operar o serviço e atender
           solicitações de privacidade.
         </p>
         <p>
@@ -106,9 +106,8 @@ export default function Privacy() {
           status no painel e entrar em contato pelo e-mail acima.
         </p>
         <p>
-          O cadastro público está em preparação enquanto o envio de e-mails e a
-          operação de privacidade são concluídos. Esses controles não
-          representam certificação de conformidade jurídica integral.
+          Os controles técnicos e o atendimento de privacidade não representam
+          certificação de conformidade jurídica integral.
         </p>
       </section>
       <Link className="button button-secondary" href="/cliente">

@@ -27,13 +27,16 @@ export default async function Booking({
   if (!isConfigured())
     return (
       <main id="main" className="container workspace stack">
-        <Link href="/" aria-label="MyMeet, início">
+        <Link href="/" aria-label="NuvemMeet, início">
           <Logo />
         </Link>
         <h1>A agenda está sendo preparada.</h1>
-        <p className="notice">O acesso real aguarda a conexão com Supabase.</p>
-        <Link className="button" href="/demo">
-          Ver demonstração
+        <p className="notice">
+          Esta agenda está temporariamente indisponível. Tente novamente em
+          instantes.
+        </p>
+        <Link className="button button-secondary" href="/empresas">
+          Encontrar empresas
         </Link>
       </main>
     );
@@ -84,7 +87,7 @@ export default async function Booking({
   return (
     <main id="main" className="container workspace stack">
       <nav className="inline between">
-        <Link href="/" aria-label="MyMeet, início">
+        <Link href="/" aria-label="NuvemMeet, início">
           <Logo />
         </Link>
         <div className="inline">

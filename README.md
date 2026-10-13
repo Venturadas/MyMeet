@@ -1,91 +1,60 @@
-# MyMeet
+# NuvemMeet
 
-MVP de agendamento para pequenas empresas. Next.js + TypeScript + Supabase, preparado para Vercel. Interface em português, azul/branco, responsiva e com formas arredondadas.
+SaaS de agendas para empresas e clientes. Next.js, TypeScript, Supabase e Mercado Pago. Interface em português, azul e branco, responsiva e sem demonstração ou dados simulados.
 
-## O que já existe
+## Uso
 
-- Página inicial e demonstração interativa, com dados fictícios somente em memória.
-- Cadastro, confirmação de e-mail, login, recuperação de senha e logout pelo Supabase Auth.
-- Uma empresa e uma agenda por conta: nome, link, descrição, serviços, preços, duração e expediente semanal.
-- Link público `/agendar/[slug]`: consulta de horários sem login; reserva exige conta.
-- Busca pública de empresas por nome em `/empresas`, com paginação e acesso aos serviços e horários. O catálogo mostra somente as informações públicas da empresa.
-- Painel da empresa: confirmar, cancelar, reagendar, concluir e comentar reservas.
-- Painel do cliente: reservas, cancelamento/reagendamento antes do início, gasto histórico em serviços concluídos, edição do próprio nome, exportação e solicitação de exclusão com status.
-- RLS, autorização no banco, identidade/preço capturados pelo servidor e exclusão GiST contra reservas simultâneas.
+Clientes criam uma conta gratuita, encontram a empresa em `/empresas`, escolhem serviço/data/horário em `/agendar/[slug]` e acompanham suas reservas em `/cliente`.
 
-O MVP usa horários de Brasília, um período de atendimento por dia e intervalos de 15 minutos, com antecedência máxima de 90 dias. Não processa pagamentos, envia lembretes ou admite profissionais atendendo em paralelo. Listas mostram os últimos 100 agendamentos; o total gasto é calculado sobre todo o histórico concluído.
+Empresas pagam R$ 14,99 por Pix para obter 30 dias de acesso. Após confirmação do Mercado Pago no backend, podem criar a empresa informando somente o nome; o link é gerado automaticamente. Serviços, expediente, agendamentos, compartilhamento e análise ficam em `/empresa`.
 
-## Como usar os dois painéis
+O dashboard usa dados reais do banco: filtros de 7 dias, 30 dias, 3 meses e 1 ano; gráfico diário de atendimentos concluídos e tabela por dia. Total/concluídos/cancelados usam a data do atendimento no período escolhido, em Brasília. Futuros mostra todos os próximos atendimentos pendentes/confirmados, identificado na interface. Concluído exige o status `completed`. A tabela é paginada; os totais e o gráfico usam o período inteiro.
 
-Uma conta pode contratar serviços e administrar sua própria empresa. **Meus agendamentos** é o painel do cliente; **Minha empresa** é o painel de quem atende clientes.
-
-Para agendar: use **Agendar** na página inicial ou **Agendar um serviço** no painel do cliente. Em **Encontrar empresas**, busque pelo nome e clique em **Ver serviços e horários**. Escolha serviço, dia e horário; entre na conta para confirmar a reserva. Depois acompanhe em **Meus agendamentos**. Também funciona pelo link compartilhado pela empresa.
-
-Para oferecer serviços: em **Minha empresa**, salve nome/link/descrição, adicione um serviço e defina o expediente. A empresa passa a aparecer no catálogo; os serviços ativos e os horários configurados permitem reservas. Uma empresa sem serviços ou expediente ainda não oferece horários. A demonstração usa dados fictícios e não cria empresas no catálogo real.
+Ao vencer o acesso, o banco suspende novas reservas, catálogo e painel da empresa. Históricos e cancelamentos de reservas existentes permanecem protegidos e acessíveis ao titular. O Pix é renovado manualmente; não há débito automático.
 
 ## Desenvolvimento
 
-Requer Node.js 22+ (validado com 24) e npm. Use o checkout existente; cada tarefa na nuvem já é isolada e não precisa de worktree.
+Node.js 22+; validado com 24. Na raiz do checkout:
 
 ```sh
-cd /workspace/MyMeet
-npm ci --cache /workspace/.npm
+npm ci
 npm run dev
 ```
 
-Sem variáveis do Supabase, a página inicial e `/demo` funcionam. Os painéis reais e a autenticação ficam indisponíveis, com indicação clara. Nenhuma demonstração é apresentada como reserva real.
+Copie `.env.example` para `.env.local` sem sobrescrever configurações existentes. O aplicativo utiliza a URL e a chave pública do Supabase para autenticação e operações comuns. A chave administrativa é exclusiva do módulo de pagamento no servidor. Nenhum segredo pode usar o prefixo `NEXT_PUBLIC_`, aparecer no Git, no navegador ou nos logs.
 
-## Conectar o seu Supabase
+Sem configuração do banco, as rotas públicas indicam indisponibilidade e as ações reais são bloqueadas. Não há fallback com dados fictícios.
 
-1. Use um projeto novo ou revise a compatibilidade com tabelas existentes. A migração não deve ser aplicada às cegas em outro aplicativo.
-2. Execute os arquivos de `supabase/migrations/` em ordem de nome no SQL Editor do projeto. Cada migração é transacional: falha não deve deixar instalação parcial. Em um banco já instalado, aplique somente as migrações que faltam; não reaplique a inicial. Nunca execute fixtures de teste no projeto real.
-3. Copie `.env.example` para `.env.local` e preencha a URL do projeto e a chave **publishable** (ou chave pública `anon` legado). Preencha também `NEXT_PUBLIC_SITE_URL` com a origem exata da aplicação.
-4. No Supabase Auth, ative confirmação de e-mail, configure Site URL e permita o callback `https://SEU-DOMINIO/auth/callback` (também a origem local durante desenvolvimento). Configure SMTP para o uso real, limite tentativas de autenticação e mantenha o acesso administrativo com MFA. Senhas no aplicativo exigem ao menos 12 caracteres; ajuste a política do Auth para o mesmo mínimo. Cadastros públicos começam fechados: após configurar o envio de e-mail e completar a política de privacidade, habilite signup no Supabase e defina `MYMEET_REGISTRATION_OPEN=true` no aplicativo. Esse controle existe também na Server Action; um POST manual não o contorna.
-5. Recomece o servidor após configurar variáveis. Use os templates em `supabase/templates/` no Supabase Auth: confirmação aponta para `/auth/confirm?token_hash={{ .TokenHash }}&type=signup` e recuperação usa `type=recovery`, com a origem `{{ .SiteURL }}`. Esse fluxo valida o token no servidor e funciona também em outro navegador. O callback PKCE antigo permanece disponível para links anteriores. Cadastre uma empresa, serviço e horário; com outra conta, reserve pelo link e confirme no painel da empresa.
+## Banco e pagamentos
 
-Só a chave pública deve ser usada pela aplicação. **Nunca** coloque `service_role`, senha do banco ou token administrativo em variáveis `NEXT_PUBLIC_*`, Git ou navegador. Este aplicativo não precisa de chave administrativa. O proprietário do MyMeet administra os dados através do painel Supabase; os hosts não recebem acesso ao projeto.
+Aplique `supabase/migrations/` em ordem de nome. As duas primeiras migrations já existem no projeto original e não devem ser reaplicadas. Revise compatibilidade antes de usar outro projeto. A migration de assinaturas mantém dados existentes e não concede acesso pago automaticamente.
 
-Consulte [supabase/README.md](supabase/README.md) para regras e contratos do banco.
+RLS protege contas/empresas/agendamentos. Assinaturas são consultáveis apenas pelo próprio usuário; o ledger financeiro é privado. Somente o backend privilegiado pode aplicar uma cobrança verificada. Intents persistentes, transações únicas, bloqueios e deduplicação impedem que retries acrescentem dias ou que o navegador marque um Pix como pago.
 
-## Vercel
+Veja [docs/PAGAMENTOS.md](docs/PAGAMENTOS.md) para credenciais, assinatura do webhook, habilitação e validação real. Até configurar a conta recebedora e confirmar o fluxo no Mercado Pago, o botão de pagamento fica indisponível. A página de retorno ou um parâmetro na URL nunca libera acesso.
 
-Importe `Venturadas/MyMeet`, branch `main`, com preset Next.js e Node.js 24. Instalação: `npm ci`; build: `npm run build`; diretório raiz: raiz do repositório. Configure as mesmas variáveis de `.env.example` no ambiente de produção e defina `NEXT_PUBLIC_SITE_URL` como o domínio final com HTTPS. Atualize os callbacks no Supabase Auth e faça um novo build quando mudar variáveis públicas.
+## Vercel e autenticação
 
-Para preview, use projeto Supabase separado com dados fictícios. Não conecte previews públicos a dados reais de produção. O código está preparado para deploy; criar esse arquivo não publica o site nem conecta automaticamente um projeto Supabase.
+Use preset Next.js, Node.js 24, `npm ci` e `npm run build`. Defina a origem HTTPS final em `NEXT_PUBLIC_SITE_URL`; mantenha Site URL e callbacks `/auth/confirm` e `/auth/callback` correspondentes no Supabase. Confirmação de e-mail e senhas de pelo menos 12 caracteres permanecem obrigatórias.
+
+`NUVEMMEET_REGISTRATION_OPEN` controla novos cadastros no servidor. `MERCADO_PAGO_BILLING_ENABLED` controla a cobrança; ambos são independentes. Não habilite pagamentos sem credenciais e webhook válidos.
 
 ## Verificação
 
 ```sh
-npm run typecheck
 npm run build
+npm run typecheck
 npm test
-```
-
-Os testes de navegador usam Chromium em `/usr/bin/chromium` quando disponível; em outras máquinas, instale o navegador com `npx playwright install chromium`. Verificam a demonstração, navegação, telas pequenas e bloqueio das rotas reais sem configuração. Para testes externos no ambiente com proxy, mantenha TLS verificado e a confiança no CA fornecido pelo ambiente; o Chromium pode precisar de permissão de escrita/lock no banco NSS de certificados, mesmo quando o certificado já estiver instalado. Não use `ignoreHTTPSErrors`.
-
-Para testar as regras de acesso em PostgreSQL descartável:
-
-```sh
 cd supabase/tests
-npm ci --cache /workspace/.npm
+npm ci
 cd ../..
 npm run test:db
 ```
 
-O runner inicia um banco local e usa fixtures de `auth.users`, sem acessar o projeto Supabase real. Os testes de SQL cobrem RLS, ações autorizadas, adulteração, snapshots e concorrência. A integração de confirmação de e-mail e as reservas pelo Auth real devem ser verificadas após conectar seu projeto.
+Playwright verifica navegação, marca, autenticação, busca, Pix e telas de 320/390px. O runner SQL usa PostgreSQL descartável e cobre isolamento, concorrência, reservas, assinaturas, cobrança e análise. Fixtures existem somente nos testes; nenhuma é exibida como empresa ou atendimento real. Testes hospedados usam IDs isolados e removem exclusivamente seus próprios dados ao terminar. Não desative TLS para executar testes no ambiente com proxy.
 
-## Privacidade antes do lançamento
+## Operação e privacidade
 
-O cadastro coleta somente nome/e-mail. Hosts recebem nome e informações dos agendamentos realizados com sua empresa, sem acesso ao perfil, e-mail ou histórico em outras empresas. Cookies de sessão são HTTP-only, SameSite=Lax e Secure em produção. Não há publicidade nem analytics de terceiros.
+[docs/PRIVACIDADE-OPERACAO.md](docs/PRIVACIDADE-OPERACAO.md) descreve atendimento de direitos, retenção, backups, segurança e responsabilidades. Exportação e solicitação de exclusão permanecem disponíveis. Exclusão requer tratamento administrativo; a conta/empresa não deve ser removida enquanto houver vínculos financeiros ou agendamentos que precisam de destinação.
 
-O aplicativo tem exportação e **solicitação** de exclusão, não exclusão automática. O responsável deve processar as solicitações no Supabase, considerar retenções legais, anonimizar/apagar os registros aplicáveis e responder ao titular. Defina responsável e contato nas variáveis públicas correspondentes.
-
-Antes de receber dados reais, prepare a operação descrita em [docs/PRIVACIDADE-OPERACAO.md](docs/PRIVACIDADE-OPERACAO.md): retenção, bases legais, contratos/responsabilidades com as empresas e provedores, transferência internacional, atendimento dos direitos dos titulares, backups/restauração e resposta a incidentes. Restrinja permissões administrativas e use MFA. Os controles implementados reduzem riscos; não certificam conformidade integral com a LGPD nem garantem ausência de invasões.
-
-## Próximas melhorias
-
-1. Lembretes de horário e notificações de confirmação por e-mail, com preferências claras.
-2. Vários profissionais, pausas no expediente, feriados e bloqueios por data.
-3. Paginação, lista de espera e política de cancelamento da empresa.
-4. Automatização auditada do atendimento a solicitações de privacidade e rotinas de retenção.
-5. Pagamentos e relatórios somente após validar o uso do MVP.
+O código reduz riscos, mas não certifica conformidade jurídica integral nem substitui a preparação operacional. Banco/Auth e aplicação usam regiões nos EUA; contratos, transferência internacional, MFA e backup/restauração precisam ser tratados pelo responsável antes da operação comercial.

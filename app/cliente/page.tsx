@@ -48,8 +48,7 @@ export default async function Customer({
           <span className="eyebrow">Painel do cliente</span>
           <h1>Olá, {profile.data?.display_name || "que bom ter você aqui"}.</h1>
           <p className="muted">
-            Aqui você agenda serviços em empresas e acompanha suas reservas.
-            Para atender seus clientes, use Minha empresa.
+            Reserve um serviço ou acompanhe seus próximos horários.
           </p>
         </div>
         <Link className="button" href="/empresas">
@@ -59,44 +58,41 @@ export default async function Customer({
       <Notices params={await searchParams} />
       {hasError && (
         <p className="notice error" role="alert">
-          Não foi possível carregar todos os dados. Verifique a conexão e a
-          migração do banco.
+          Não foi possível carregar todos os dados. Tente novamente em
+          instantes.
         </p>
       )}
-      <section className="grid-2" aria-label="Resumo">
-        <div className="card metric">
-          <span className="muted">Gasto em serviços concluídos</span>
-          <strong>
+      <dl className="metrics-strip customer-metrics" aria-label="Resumo">
+        <div>
+          <dt>Serviços concluídos</dt>
+          <dd className="metric-value">
             {spending.error
               ? "Indisponível"
               : money(Number(spending.data || 0))}
-          </strong>
-          <small>
-            Valor dos serviços marcados como concluídos; não representa
-            pagamento processado pelo MyMeet.
-          </small>
+          </dd>
+          <small>Valor dos atendimentos, sem cobrança pelo NuvemMeet.</small>
         </div>
-        <div className="card metric">
-          <span className="muted">Próximos agendamentos</span>
-          <strong>
-            {
-              items.filter(
-                (x) =>
-                  ["pending", "confirmed"].includes(x.status) &&
-                  new Date(x.starts_at) > new Date(),
-              ).length
-            }
-          </strong>
-          <small>Nos últimos 100 registros da sua agenda.</small>
+        <div>
+          <dt>Próximos agendamentos</dt>
+          <dd className="metric-value">
+            {appointments.error
+              ? "Indisponível"
+              : items.filter(
+                  (x) =>
+                    ["pending", "confirmed"].includes(x.status) &&
+                    new Date(x.starts_at) > new Date(),
+                ).length}
+          </dd>
+          <small>Nos últimos 100 registros.</small>
         </div>
-      </section>
+      </dl>
       <section className="stack">
         <h2>Meus agendamentos</h2>
         <p className="muted">Últimos 100 registros · horários de Brasília.</p>
-        <Appointments items={items} />
+        {!appointments.error && <Appointments items={items} />}
       </section>
-      <section className="card stack">
-        <h2>Você tem controle sobre seus dados</h2>
+      <details className="stack">
+        <summary>Meu perfil e privacidade</summary>
         <details>
           <summary>Atualizar meu nome</summary>
           <form className="stack" action={saveProfile}>
@@ -160,7 +156,7 @@ export default async function Customer({
             </button>
           </form>
         </details>
-      </section>
+      </details>
     </AppShell>
   );
 }

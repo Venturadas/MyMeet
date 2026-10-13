@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { isConfigured, supabase } from "@/lib/supabase";
 
+const headers = {
+  "Cache-Control": "private, no-store",
+  "Referrer-Policy": "no-referrer",
+  "X-Content-Type-Options": "nosniff",
+};
+
 export async function GET() {
   if (!isConfigured())
     return NextResponse.json(
       { error: "Serviço indisponível" },
-      { status: 503 },
+      { status: 503, headers },
     );
   const db = await supabase();
   const {
@@ -14,19 +20,18 @@ export async function GET() {
   if (!user)
     return NextResponse.json(
       { error: "Entre para exportar seus dados" },
-      { status: 401 },
+      { status: 401, headers },
     );
   const { data, error } = await db.rpc("export_my_data");
   if (error)
     return NextResponse.json(
       { error: "Não foi possível exportar seus dados" },
-      { status: 500 },
+      { status: 500, headers },
     );
   return NextResponse.json(data, {
     headers: {
-      "Cache-Control": "private, no-store",
-      "Content-Disposition": 'attachment; filename="mymeet-meus-dados.json"',
-      "X-Content-Type-Options": "nosniff",
+      ...headers,
+      "Content-Disposition": 'attachment; filename="nuvemmeet-meus-dados.json"',
     },
   });
 }

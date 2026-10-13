@@ -102,12 +102,9 @@ export default async function Companies({
         <section className="card stack">
           <h2>As agendas estão sendo preparadas</h2>
           <p className="muted">
-            A busca de empresas reais aguarda a conexão com o banco. Você pode
-            experimentar o agendamento na demonstração.
+            A busca está temporariamente indisponível. Tente novamente em
+            instantes.
           </p>
-          <Link className="button button-secondary" href="/demo">
-            Ver demonstração
-          </Link>
         </section>
       ) : unavailable ? (
         <p className="notice error" role="alert">
@@ -165,7 +162,6 @@ export default async function Companies({
                     </Link>
                   )}
                   <Link href="/empresa">Configurar minha empresa</Link>
-                  <Link href="/demo">Experimentar a demonstração</Link>
                 </div>
               </div>
             )}

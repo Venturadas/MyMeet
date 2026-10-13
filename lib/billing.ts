@@ -2,44 +2,29 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { BUSINESS_PRICE_CENTS, BUSINESS_CURRENCY } from "./billing-plan";
 import {
-  mercadoPagoCheckoutUrl,
+  trustedBillingOrigin,
   providerDate,
-  subscriptionMatches,
-  validProviderId,
-  verifiedPaidPeriod,
-  type ProviderInvoice,
+  validCheckoutId,
+  validPaymentId,
+  verifiedPixPayment,
+  safePixCode,
+  safePixQrBase64,
+  safePixTicketUrl,
   type ProviderPayment,
-  type ProviderSubscription,
+  type VerifiedPixPayment,
 } from "./billing-policy";
 
 const API = "https://api.mercadopago.com";
-
-function siteUrl() {
-  try {
-    const site = new URL(process.env.NEXT_PUBLIC_SITE_URL || "");
-    return site.protocol === "https:" &&
-      !site.username &&
-      !site.password &&
-      !site.port &&
-      site.pathname === "/" &&
-      !site.search &&
-      !site.hash
-      ? site.origin
-      : null;
-  } catch {
-    return null;
-  }
-}
 
 export function billingIsConfigured() {
   return (
     process.env.MERCADO_PAGO_BILLING_ENABLED === "true" &&
     Boolean(
       process.env.MERCADO_PAGO_ACCESS_TOKEN &&
-        process.env.MERCADO_PAGO_WEBHOOK_SECRET &&
-        process.env.SUPABASE_SERVICE_ROLE_KEY &&
-        process.env.NEXT_PUBLIC_SUPABASE_URL &&
-        siteUrl(),
+      process.env.MERCADO_PAGO_WEBHOOK_SECRET &&
+      process.env.SUPABASE_SERVICE_ROLE_KEY &&
+      process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      trustedBillingOrigin(process.env.NEXT_PUBLIC_SITE_URL),
     )
   );
 }
@@ -89,216 +74,214 @@ async function merchant() {
 
 type Checkout = {
   id: string;
+  checkout_id: string;
   user_id: string;
-  provider_subscription_id: string | null;
+  business_id: string | null;
+  payment_id: string | null;
   status: string;
+  expires_at: string | null;
+  merchant_id: string | null;
+  event_at: string | null;
+  paid_at: string | null;
+};
+export type BusinessBillingStatus = {
+  payment: {
+    id: string;
+    status: string;
+    qrCode: string | null;
+    qrCodeBase64: string | null;
+    ticketUrl: string | null;
+    expiresAt: string | null;
+  } | null;
+  subscription: { active: boolean; expiresAt: string | null };
 };
 
-export async function startBusinessSubscription(user: {
-  id: string;
-  email: string;
-}): Promise<string> {
-  const db = admin();
-  const merchantId = await merchant();
-  const { data: claim, error } = await db.rpc("claim_subscription_checkout", {
-    p_user_id: user.id,
+async function checkoutById(id: string): Promise<Checkout | null> {
+  const { data, error } = await admin().rpc("get_pix_checkout", {
+    p_checkout_id: id,
   });
-  if (error || !claim) throw new Error("checkout_unavailable");
-  if (claim.status === "active") throw new Error("already_subscribed");
-  if (typeof claim.checkout_id !== "string")
-    throw new Error("checkout_unavailable");
-  let subscription: ProviderSubscription;
-  if (
-    claim.provider_subscription_id &&
-    validProviderId(claim.provider_subscription_id)
-  ) {
-    subscription = await provider<ProviderSubscription>(
-      `/preapproval/${encodeURIComponent(claim.provider_subscription_id)}`,
-    );
-  } else if (claim.claimed === true) {
-    // A durable claim comes BEFORE the external request. If a response is lost,
-    // another request never creates a second subscription; reconcile it first.
-    subscription = await provider<ProviderSubscription>(
-      "/preapproval",
-      {
-        reason: "MyMeet — assinatura mensal para empresa",
-        external_reference: claim.checkout_id,
-        payer_email: user.email,
-        auto_recurring: {
-          frequency: 1,
-          frequency_type: "months",
-          transaction_amount: BUSINESS_PRICE_CENTS / 100,
-          currency_id: BUSINESS_CURRENCY,
-        },
-        back_url: `${siteUrl()}/planos?checkout=return`,
-        status: "pending",
-      },
-      claim.checkout_id,
-    );
-  } else throw new Error("checkout_needs_reconciliation");
-  if (
-    !subscriptionMatches(subscription, claim.checkout_id, merchantId) ||
-    !["pending", "authorized"].includes(subscription.status || "")
-  )
-    throw new Error("invalid_subscription");
-  const eventAt = providerDate(subscription.last_modified);
-  const checkoutUrl = mercadoPagoCheckoutUrl(subscription.init_point);
-  if (!eventAt || !checkoutUrl) throw new Error("invalid_checkout");
-  const { error: bindError } = await db.rpc("bind_subscription_checkout", {
-    p_checkout_id: claim.checkout_id,
-    p_provider_subscription_id: subscription.id,
-    p_event_at: eventAt.toISOString(),
-  });
-  if (bindError) throw new Error("checkout_unavailable");
-  return checkoutUrl;
-}
-
-async function linkedCheckout(
-  subscription: ProviderSubscription,
-  merchantId: number,
-): Promise<Checkout | null> {
-  const reference = subscription.external_reference;
-  if (
-    typeof reference !== "string" ||
-    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-      reference,
-    ) ||
-    !subscriptionMatches(subscription, reference, merchantId)
-  )
-    return null;
-  const db = admin();
-  const { data, error } = await db
-    .from("business_subscription_checkouts")
-    .select("id,user_id,provider_subscription_id,status")
-    .eq("id", reference)
-    .maybeSingle();
   if (error) throw new Error("billing_storage_unavailable");
-  if (
-    !data ||
-    (data.provider_subscription_id &&
-      data.provider_subscription_id !== subscription.id)
-  )
-    return null;
-  const eventAt = providerDate(subscription.last_modified);
-  if (!eventAt || eventAt.getTime() > Date.now() + 300_000)
-    throw new Error("invalid_provider_timestamp");
-  const { error: bindError } = await db.rpc("bind_subscription_checkout", {
-    p_checkout_id: data.id,
-    p_provider_subscription_id: subscription.id,
-    p_event_at: eventAt.toISOString(),
-  });
-  if (bindError) throw new Error("billing_storage_unavailable");
   return data;
 }
 
-async function apply(
-  checkout: Checkout,
-  subscription: ProviderSubscription,
-  state: "active" | "paused" | "cancelled" | "expired",
-  eventId: string,
-  payment?: ProviderPayment,
-  end?: string,
+async function subscriptionFor(
+  userId: string,
+): Promise<BusinessBillingStatus["subscription"]> {
+  const { data, error } = await admin()
+    .from("business_subscriptions")
+    .select("status,current_period_end")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error("billing_storage_unavailable");
+  const expiry = providerDate(data?.current_period_end);
+  return {
+    active:
+      data?.status === "active" &&
+      Boolean(expiry && expiry.getTime() > Date.now()),
+    expiresAt: expiry?.toISOString() || null,
+  };
+}
+
+async function reconcile(
+  payment: ProviderPayment,
+  merchantId: number,
+  intendedCheckout?: Checkout,
 ) {
-  const { error } = await admin().rpc("apply_business_subscription_event", {
+  if (!validCheckoutId(payment.external_reference))
+    throw new Error("invalid_payment");
+  const checkout =
+    intendedCheckout || (await checkoutById(payment.external_reference));
+  if (!checkout) return null;
+  const verified = verifiedPixPayment(payment, checkout.id, merchantId);
+  if (
+    !verified ||
+    (checkout.payment_id && checkout.payment_id !== verified.id) ||
+    (checkout.merchant_id && checkout.merchant_id !== verified.merchantId)
+  )
+    throw new Error("invalid_payment");
+  const db = admin();
+  const { error: bindError } = await db.rpc("bind_pix_checkout", {
     p_checkout_id: checkout.id,
-    p_provider_subscription_id: subscription.id,
-    p_status: state,
-    p_event_at: providerDate(subscription.last_modified)!.toISOString(),
-    p_period_end: end || null,
-    p_payment_id: payment ? String(payment.id) : null,
-    p_event_id: eventId,
-    p_payment_event_at: payment
-      ? providerDate(payment.date_last_updated)?.toISOString() || null
-      : null,
+    p_payment_id: verified.id,
+    p_status: verified.status,
+    p_event_at: verified.eventAt,
+    p_expires_at: verified.expiresAt,
+    p_merchant_id: verified.merchantId,
+  });
+  if (bindError) throw new Error("billing_storage_unavailable");
+  const { error } = await db.rpc("apply_pix_payment", {
+    p_checkout_id: checkout.id,
+    p_payment_id: verified.id,
+    p_status: verified.status,
+    p_paid_at: verified.paidAt,
+    p_event_at: verified.eventAt,
+    p_expires_at: verified.expiresAt,
+    p_merchant_id: verified.merchantId,
+    p_amount_cents: BUSINESS_PRICE_CENTS,
+    p_currency: BUSINESS_CURRENCY,
   });
   if (error) throw new Error("billing_storage_unavailable");
+  return verified;
 }
 
-async function handleInvoice(invoice: ProviderInvoice, merchantId: number) {
-  if (!validProviderId(invoice.preapproval_id)) return;
-  const subscription = await provider<ProviderSubscription>(
-    `/preapproval/${encodeURIComponent(invoice.preapproval_id)}`,
-  );
-  const checkout = await linkedCheckout(subscription, merchantId);
-  if (!checkout) return;
-  if (["paused", "cancelled"].includes(subscription.status || "")) {
-    await apply(
+function presentPayment(
+  payment: ProviderPayment,
+  verified: VerifiedPixPayment,
+): BusinessBillingStatus["payment"] {
+  const payable =
+    verified.status === "pending" &&
+    Boolean(
+      verified.expiresAt && new Date(verified.expiresAt).getTime() > Date.now(),
+    );
+  const details = payment.point_of_interaction?.transaction_data;
+  return {
+    id: verified.id,
+    status: verified.status,
+    expiresAt: verified.expiresAt,
+    qrCode: payable ? safePixCode(details?.qr_code) : null,
+    qrCodeBase64: payable ? safePixQrBase64(details?.qr_code_base64) : null,
+    ticketUrl: payable ? safePixTicketUrl(details?.ticket_url) : null,
+  };
+}
+
+async function ownPaymentStatus(
+  userId: string,
+  checkout: Checkout | null,
+  merchantId?: number,
+): Promise<BusinessBillingStatus> {
+  if (checkout && checkout.user_id !== userId)
+    throw new Error("invalid_checkout");
+  let output: BusinessBillingStatus["payment"] = null;
+  if (checkout?.payment_id && validPaymentId(checkout.payment_id)) {
+    const payment = await provider<ProviderPayment>(
+      `/v1/payments/${checkout.payment_id}`,
+    );
+    const verified = await reconcile(
+      payment,
+      merchantId || (await merchant()),
       checkout,
-      subscription,
-      subscription.status as "paused" | "cancelled",
-      `subscription:${subscription.id}:${subscription.last_modified}:${subscription.status}`,
     );
-    return;
+    if (!verified || verified.id !== checkout.payment_id)
+      throw new Error("invalid_payment");
+    output = presentPayment(payment, verified);
   }
-  const paymentId = String(invoice.payment?.id || "");
-  if (!validProviderId(paymentId) || !/^\d+$/.test(paymentId)) return;
-  const payment = await provider<ProviderPayment>(
-    `/v1/payments/${encodeURIComponent(paymentId)}`,
-  );
-  if (
-    String(payment.id) !== paymentId ||
-    payment.collector_id !== merchantId ||
-    payment.live_mode !== true
-  )
-    return;
-  const paymentDate = providerDate(payment.date_last_updated);
-  if (!paymentDate || paymentDate.getTime() > Date.now() + 300_000) return;
-  const eventId = `payment:${payment.id}:${payment.date_last_updated}:${payment.status}`;
-  const paid = verifiedPaidPeriod(
-    subscription,
-    invoice,
-    payment,
-    checkout.id,
-    merchantId,
-  );
-  if (paid && new Date(paid.end).getTime() > Date.now()) {
-    await apply(checkout, subscription, "active", eventId, payment, paid.end);
-  } else if (
-    ["refunded", "charged_back"].includes(payment.status || "") ||
-    Number(payment.transaction_amount_refunded || 0) > 0
-  ) {
-    // SQL revokes only if this payment still backs the latest paid period.
-    await apply(checkout, subscription, "expired", eventId, payment);
-  }
+  return { payment: output, subscription: await subscriptionFor(userId) };
 }
 
-export async function processMercadoPagoNotification(type: string, id: string) {
+export async function getBusinessBillingStatus(
+  userId: string,
+): Promise<BusinessBillingStatus> {
+  const { data, error } = await admin().rpc("get_latest_pix_checkout", {
+    p_user_id: userId,
+  });
+  if (error) throw new Error("billing_storage_unavailable");
+  return ownPaymentStatus(userId, data);
+}
+
+export async function startBusinessPix(user: {
+  id: string;
+  email: string;
+}): Promise<BusinessBillingStatus> {
+  // Reconcile the previous payment before creating a renewal, including when
+  // the buyer retries directly and its approval notification was delayed.
+  const current = await getBusinessBillingStatus(user.id);
+  if (current.subscription.active) return current;
   const merchantId = await merchant();
-  if (type === "subscription_preapproval") {
-    const subscription = await provider<ProviderSubscription>(
-      `/preapproval/${encodeURIComponent(id)}`,
-    );
-    if (subscription.id !== id) return;
-    const checkout = await linkedCheckout(subscription, merchantId);
-    if (!checkout) return;
-    if (
-      subscription.status === "paused" ||
-      subscription.status === "cancelled"
-    ) {
-      await apply(
-        checkout,
-        subscription,
-        subscription.status,
-        `subscription:${subscription.id}:${subscription.last_modified}:${subscription.status}`,
-      );
-    }
-    // "authorized" only means the recurring mandate exists. No paid access.
-  } else if (type === "subscription_authorized_payment") {
-    const invoice = await provider<ProviderInvoice>(
-      `/authorized_payments/${encodeURIComponent(id)}`,
-    );
-    if (String(invoice.id) !== id) return;
-    await handleInvoice(invoice, merchantId);
-  } else if (type === "payment" && /^\d+$/.test(id)) {
-    const result = await provider<{ results?: ProviderInvoice[] }>(
-      `/authorized_payments/search?payment_id=${encodeURIComponent(id)}&limit=2`,
-    );
-    if (
-      !Array.isArray(result.results) ||
-      result.results.length !== 1 ||
-      String(result.results[0].payment?.id) !== id
-    )
-      return;
-    await handleInvoice(result.results[0], merchantId);
-  }
+  const db = admin();
+  const { data: claim, error } = await db.rpc("claim_pix_checkout", {
+    p_user_id: user.id,
+  });
+  if (error || !claim) throw new Error("checkout_unavailable");
+  if (claim.status === "active")
+    return { payment: null, subscription: await subscriptionFor(user.id) };
+  if (!validCheckoutId(claim.checkout_id))
+    throw new Error("checkout_unavailable");
+  const checkout = await checkoutById(claim.checkout_id);
+  if (!checkout || checkout.user_id !== user.id)
+    throw new Error("invalid_checkout");
+  if (checkout.payment_id)
+    return ownPaymentStatus(user.id, checkout, merchantId);
+  const expiry = providerDate(checkout.expires_at);
+  if (!expiry || expiry.getTime() <= Date.now())
+    throw new Error("checkout_expired");
+  // The durable intent, expiration and idempotency key exist BEFORE this request.
+  // Lost responses retry this exact UUID, never create a second charge blindly.
+  const created = await provider<ProviderPayment>(
+    "/v1/payments",
+    {
+      transaction_amount: BUSINESS_PRICE_CENTS / 100,
+      description: "NuvemMeet — plano empresa por 30 dias",
+      payment_method_id: "pix",
+      payer: { email: user.email },
+      external_reference: checkout.id,
+      date_of_expiration: expiry.toISOString().replace("Z", "+00:00"),
+      notification_url: `${trustedBillingOrigin(process.env.NEXT_PUBLIC_SITE_URL)}/api/billing/webhook`,
+    },
+    checkout.id,
+  );
+  const createdVerified = verifiedPixPayment(created, checkout.id, merchantId);
+  if (!createdVerified) throw new Error("invalid_payment");
+  // Read the authoritative resource again before granting any paid access.
+  const payment = await provider<ProviderPayment>(
+    `/v1/payments/${createdVerified.id}`,
+  );
+  const verified = await reconcile(payment, merchantId, checkout);
+  if (!verified || verified.id !== createdVerified.id)
+    throw new Error("invalid_payment");
+  return {
+    payment: presentPayment(payment, verified),
+    subscription: await subscriptionFor(user.id),
+  };
+}
+
+export async function processMercadoPagoNotification(id: string) {
+  if (!validPaymentId(id)) throw new Error("invalid_payment");
+  const merchantId = await merchant();
+  const payment = await provider<ProviderPayment>(`/v1/payments/${id}`);
+  const actualId =
+    typeof payment.id === "number" && Number.isSafeInteger(payment.id)
+      ? String(payment.id)
+      : payment.id;
+  if (actualId !== id) throw new Error("invalid_payment");
+  await reconcile(payment, merchantId);
 }
