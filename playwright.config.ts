@@ -25,7 +25,7 @@ export default defineConfig({
   webServer: externalServer
     ? undefined
     : {
-        command: "npm run start -- --port 3100",
+        command: "npm run start -- --hostname localhost --port 3100",
         url: baseURL,
         reuseExistingServer: false,
         timeout: 60000,

@@ -1,5 +1,28 @@
 import { test, expect } from "@playwright/test";
 
+test("links de confirmação inválidos não redirecionam para fora do site", async ({
+  request,
+}) => {
+  const paths = [
+    "/auth/callback",
+    "/auth/callback?code=invalid&next=https%3A%2F%2Fexample.invalid",
+    "/auth/confirm",
+    "/auth/confirm?token_hash=" +
+      "a".repeat(64) +
+      "&type=signup&next=https%3A%2F%2Fexample.invalid",
+    "/auth/confirm?token_hash=" + "a".repeat(64) + "&type=recovery&type=signup",
+  ];
+  for (const path of paths) {
+    const response = await request.get(path, { maxRedirects: 0 });
+    expect(response.status()).toBe(307);
+    const destination = new URL(response.headers().location);
+    expect(destination.origin).toBe(new URL(response.url()).origin);
+    expect(destination.pathname).toBe("/entrar");
+    expect(response.headers()["cache-control"]).toContain("no-store");
+    expect(response.headers()["referrer-policy"]).toBe("no-referrer");
+  }
+});
+
 test("cadastro fechado também rejeita envio manual à Server Action", async ({
   page,
 }) => {
