@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { supabase, isConfigured, isRegistrationOpen } from "./supabase";
+import { hasBusinessSubscription } from "./subscription";
 
 function feedback(path: string, message: string, error = false): never {
   revalidatePath(path.split("?")[0]);
@@ -13,7 +14,7 @@ function feedback(path: string, message: string, error = false): never {
 }
 function destination(value: FormDataEntryValue | null) {
   const path = String(value || "/cliente");
-  return /^\/agendar\/[a-z0-9-]+$/.test(path) ? path : "/cliente";
+  return path === "/empresa" || path === "/planos" || /^\/agendar\/[a-z0-9-]+$/.test(path) ? path : "/cliente";
 }
 async function authenticated() {
   if (!isConfigured()) redirect("/entrar");
@@ -23,6 +24,11 @@ async function authenticated() {
   } = await db.auth.getUser();
   if (!user) redirect("/entrar");
   return { db, user };
+}
+async function subscribed() {
+  const result = await authenticated();
+  if (!(await hasBusinessSubscription(result.db))) redirect("/planos");
+  return result;
 }
 export async function signIn(form: FormData) {
   if (!isConfigured())
@@ -132,7 +138,7 @@ export async function resetPassword(form: FormData) {
   feedback("/cliente", "Senha atualizada.");
 }
 export async function saveBusiness(form: FormData) {
-  const { db, user } = await authenticated();
+  const { db, user } = await subscribed();
   const input = z
     .object({
       name: z.string().trim().min(2).max(100),
@@ -186,7 +192,7 @@ export async function saveProfile(form: FormData) {
   feedback("/cliente", "Nome atualizado para seus próximos agendamentos.");
 }
 export async function saveService(form: FormData) {
-  const { db, user } = await authenticated();
+  const { db, user } = await subscribed();
   const input = z
     .object({
       name: z.string().trim().min(2).max(100),
@@ -228,7 +234,7 @@ export async function saveService(form: FormData) {
   feedback("/empresa", "Serviço salvo.");
 }
 export async function saveHours(form: FormData) {
-  const { db } = await authenticated();
+  const { db } = await subscribed();
   const rows = [];
   for (let day = 0; day < 7; day++) {
     if (form.get(`day_${day}`) !== "on") {

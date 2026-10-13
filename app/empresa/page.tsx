@@ -3,6 +3,7 @@ export const metadata: Metadata = { title: "Painel da empresa" };
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isConfigured, supabase } from "@/lib/supabase";
+import { hasBusinessSubscription } from "@/lib/subscription";
 import { saveBusiness, saveService, saveHours } from "@/lib/actions";
 import {
   Appointment,
@@ -14,6 +15,8 @@ import {
 import { AppShell } from "@/components/app-shell";
 import { Notices } from "@/components/notices";
 import { Appointments } from "@/components/appointments";
+import { BusinessShare } from "@/components/business-share";
+import { publicBusinessLink } from "@/lib/public-business-link";
 const weekdays = [
   "Domingo",
   "Segunda",
@@ -95,12 +98,14 @@ export default async function Company({
     data: { user },
   } = await db.auth.getUser();
   if (!user) redirect("/entrar");
+  if (!(await hasBusinessSubscription(db))) redirect("/planos");
   const { data, error } = await db
     .from("businesses")
     .select("*")
     .eq("owner_id", user.id)
     .maybeSingle();
   const business = data as Business | null;
+  const sharing = business ? await publicBusinessLink(business.slug) : null;
   let services: Service[] = [];
   let hours: BusinessHours[] = [];
   let appointments: Appointment[] = [];
@@ -159,20 +164,19 @@ export default async function Company({
           </p>
         </section>
       )}
-      {business && (
-        <section className="card inline between">
-          <div>
-            <span className="eyebrow">Seu link de agendamento</span>
-            <p>
-              <Link href={`/agendar/${business.slug}`}>
-                /agendar/{business.slug}
-              </Link>
-            </p>
-          </div>
-          <Link className="button" href={`/agendar/${business.slug}`}>
-            Abrir minha agenda
-          </Link>
-        </section>
+      {business && sharing && (
+        <BusinessShare
+          key={sharing.url}
+          name={business.name}
+          url={sharing.url}
+          qrDataUrl={sharing.qrDataUrl}
+        />
+      )}
+      {business && !sharing && (
+        <p className="notice">
+          Não foi possível exibir seu link de agendamento agora. Tente novamente
+          mais tarde.
+        </p>
       )}
       <section className="grid-2">
         <div className="card stack">

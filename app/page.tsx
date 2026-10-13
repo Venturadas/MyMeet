@@ -74,6 +74,7 @@ export default function Home() {
             Como funciona
           </a>
           <Link href="/empresas">Agendar</Link>
+          <Link className="nav-how" href="/planos">Planos</Link>
           <Link className="button button-secondary button-small" href="/entrar">
             Entrar <Arrow />
           </Link>

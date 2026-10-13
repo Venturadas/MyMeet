@@ -1983,3 +1983,24 @@ details[open] > summary {
   flex-shrink: 0;
   margin-top: 0.25rem;
 }
+.business-share-qr > summary {
+  cursor: pointer;
+  list-style: none;
+}
+.business-share-qr > summary::-webkit-details-marker {
+  display: none;
+}
+.business-share-qr > summary:focus-visible {
+  outline: 3px solid #5384f4;
+  outline-offset: 4px;
+}
+.business-share-qr > div {
+  margin-top: 16px;
+}
+.business-share-qr img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+}

@@ -8,7 +8,7 @@ export function AppShell({
   authenticated = true,
 }: {
   children: React.ReactNode;
-  active?: "cliente" | "empresa" | "empresas";
+  active?: "cliente" | "empresa" | "empresas" | "planos";
   authenticated?: boolean;
 }) {
   return (

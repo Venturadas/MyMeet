@@ -20,7 +20,7 @@ export default async function SignIn({
       <div className="page-intro">
         <span className="eyebrow">Seu próximo encontro começa aqui</span>
         <h1>Uma conta. Uma agenda mais leve.</h1>
-        <p className="muted">Entre para agendar ou administrar sua empresa.</p>
+        <p className="muted">Crie sua conta grátis para agendar. Empresas precisam de uma assinatura ativa para atender clientes.</p>
       </div>
       <Notices params={params} />
       {!isConfigured() && (
@@ -80,7 +80,7 @@ export default async function SignIn({
           </details>
         </section>
         <section className="card stack">
-          <h2>Comece com o essencial</h2>
+          <h2>Crie sua conta grátis</h2>
           {!isRegistrationOpen() && (
             <p className="notice">
               Novas contas estarão disponíveis em breve. Enquanto isso,{" "}

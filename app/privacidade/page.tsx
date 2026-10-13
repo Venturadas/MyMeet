@@ -25,7 +25,15 @@ export default function Privacy() {
         <p>
           Registramos serviço, valor, horário, status e comentários sobre a
           reserva. Não solicitamos CPF, endereço, informações de saúde ou dados
-          de pagamento. Não inclua dados sensíveis nos campos de texto.
+          de cartão. Não inclua dados sensíveis nos campos de texto.
+        </p>
+        <p>
+          Para empresas assinantes, registramos o estado da assinatura,
+          período de acesso e identificadores da cobrança. O Mercado Pago
+          processa os pagamentos e recebe o e-mail da conta e os dados
+          necessários ao contrato. Dados de cartão são informados no ambiente
+          do provedor e não são armazenados pelo MyMeet. A conta de cliente é
+          gratuita; valores de serviços agendados não são cobrados pelo MyMeet.
         </p>
       </section>
       <section className="card stack">
