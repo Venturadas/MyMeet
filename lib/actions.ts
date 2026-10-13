@@ -104,7 +104,7 @@ export async function signUp(form: FormData) {
   if (data.session) redirect(next);
   feedback(
     "/entrar",
-    "Confira seu e-mail para confirmar a conta. Depois, entre para continuar.",
+    "Se o cadastro for novo, confira seu e-mail para confirmar. Já tem conta? Use Entrar ou recupere sua senha.",
   );
 }
 export async function signOut() {
