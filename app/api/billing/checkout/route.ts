@@ -15,6 +15,31 @@ function reply(value: unknown, status = 200) {
   });
 }
 
+async function containsBody(request: Request) {
+  const length = request.headers.get("content-length");
+  if (length !== null && (!/^\d+$/.test(length) || Number(length) > 0))
+    return true;
+  if (!request.body) return false;
+  // Next's Node adapter exposes a stream even for an empty POST. Inspect the
+  // stream, never its presence, and refuse the first data chunk without buffering.
+  const reader = request.body.getReader();
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    void reader.cancel().catch(() => {});
+  }, 2_000);
+  try {
+    const { done, value } = await reader.read();
+    return timedOut || !done || Boolean(value?.byteLength);
+  } catch {
+    return true;
+  } finally {
+    clearTimeout(timeout);
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}
+
 export async function POST(request: Request) {
   const origin = trustedBillingOrigin(process.env.NEXT_PUBLIC_SITE_URL);
   if (
@@ -25,7 +50,7 @@ export async function POST(request: Request) {
     return reply({ error: "Solicitação inválida." }, 403);
   // Checkout has no client-supplied price, account, company or reference fields.
   // Reject bodies without buffering them; all charge data comes from the server.
-  if (request.body || Number(request.headers.get("content-length") || 0) > 0)
+  if (await containsBody(request))
     return reply({ error: "Solicitação inválida." }, 400);
   if (!isConfigured())
     return reply({ error: "Pagamento indisponível no momento." }, 503);
