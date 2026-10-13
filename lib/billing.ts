@@ -265,7 +265,7 @@ export async function startBusinessPix(user: {
       payer: { email: user.email },
       external_reference: checkout.id,
       date_of_expiration: expiry.toISOString().replace("Z", "+00:00"),
-      notification_url: `${trustedBillingOrigin(process.env.NEXT_PUBLIC_SITE_URL)}/api/billing/webhook`,
+      notification_url: `${trustedBillingOrigin(process.env.NEXT_PUBLIC_SITE_URL)}/api/billing/webhook?source_news=webhooks`,
     },
     checkout.id,
   );
@@ -293,5 +293,8 @@ export async function processMercadoPagoNotification(id: string) {
       ? String(payment.id)
       : payment.id;
   if (actualId !== id) throw new Error("invalid_payment");
+  // The merchant may receive notifications from other integrations too.
+  // A payment without our durable UUID cannot activate a NuvemMeet plan.
+  if (!validCheckoutId(payment.external_reference)) return;
   await reconcile(payment, merchantId);
 }
