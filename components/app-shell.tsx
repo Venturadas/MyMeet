@@ -5,9 +5,11 @@ import { signOut } from "@/lib/actions";
 export function AppShell({
   children,
   active,
+  authenticated = true,
 }: {
   children: React.ReactNode;
-  active?: string;
+  active?: "cliente" | "empresa" | "empresas";
+  authenticated?: boolean;
 }) {
   return (
     <>
@@ -18,22 +20,36 @@ export function AppShell({
           </Link>
           <div className="inline">
             <Link
-              aria-current={active === "cliente" ? "page" : undefined}
-              href="/cliente"
+              aria-current={active === "empresas" ? "page" : undefined}
+              href="/empresas"
             >
-              Meus agendamentos
+              Encontrar empresas
             </Link>
-            <Link
-              aria-current={active === "empresa" ? "page" : undefined}
-              href="/empresa"
-            >
-              Minha empresa
-            </Link>
-            <form action={signOut}>
-              <button className="button button-secondary" type="submit">
-                Sair
-              </button>
-            </form>
+            {authenticated ? (
+              <>
+                <Link
+                  aria-current={active === "cliente" ? "page" : undefined}
+                  href="/cliente"
+                >
+                  Meus agendamentos
+                </Link>
+                <Link
+                  aria-current={active === "empresa" ? "page" : undefined}
+                  href="/empresa"
+                >
+                  Minha empresa
+                </Link>
+                <form action={signOut}>
+                  <button className="button button-secondary" type="submit">
+                    Sair
+                  </button>
+                </form>
+              </>
+            ) : (
+              <Link className="button button-secondary" href="/entrar">
+                Entrar
+              </Link>
+            )}
           </div>
         </nav>
       </header>

@@ -8,11 +8,20 @@ MVP de agendamento para pequenas empresas. Next.js + TypeScript + Supabase, prep
 - Cadastro, confirmação de e-mail, login, recuperação de senha e logout pelo Supabase Auth.
 - Uma empresa e uma agenda por conta: nome, link, descrição, serviços, preços, duração e expediente semanal.
 - Link público `/agendar/[slug]`: consulta de horários sem login; reserva exige conta.
+- Busca pública de empresas por nome em `/empresas`, com paginação e acesso aos serviços e horários. O catálogo mostra somente as informações públicas da empresa.
 - Painel da empresa: confirmar, cancelar, reagendar, concluir e comentar reservas.
 - Painel do cliente: reservas, cancelamento/reagendamento antes do início, gasto histórico em serviços concluídos, edição do próprio nome, exportação e solicitação de exclusão com status.
 - RLS, autorização no banco, identidade/preço capturados pelo servidor e exclusão GiST contra reservas simultâneas.
 
 O MVP usa horários de Brasília, um período de atendimento por dia e intervalos de 15 minutos, com antecedência máxima de 90 dias. Não processa pagamentos, envia lembretes ou admite profissionais atendendo em paralelo. Listas mostram os últimos 100 agendamentos; o total gasto é calculado sobre todo o histórico concluído.
+
+## Como usar os dois painéis
+
+Uma conta pode contratar serviços e administrar sua própria empresa. **Meus agendamentos** é o painel do cliente; **Minha empresa** é o painel de quem atende clientes.
+
+Para agendar: use **Agendar** na página inicial ou **Agendar um serviço** no painel do cliente. Em **Encontrar empresas**, busque pelo nome e clique em **Ver serviços e horários**. Escolha serviço, dia e horário; entre na conta para confirmar a reserva. Depois acompanhe em **Meus agendamentos**. Também funciona pelo link compartilhado pela empresa.
+
+Para oferecer serviços: em **Minha empresa**, salve nome/link/descrição, adicione um serviço e defina o expediente. A empresa passa a aparecer no catálogo; os serviços ativos e os horários configurados permitem reservas. Uma empresa sem serviços ou expediente ainda não oferece horários. A demonstração usa dados fictícios e não cria empresas no catálogo real.
 
 ## Desenvolvimento
 

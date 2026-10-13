@@ -131,8 +131,9 @@ export default async function Company({
         <span className="eyebrow">Painel da empresa</span>
         <h1>{business ? business.name : "Sua empresa. Sua agenda."}</h1>
         <p className="muted">
-          Configure seus serviços e compartilhe o link. Seus clientes escolhem o
-          horário.
+          {business
+            ? "Aqui você gerencia os atendimentos da sua empresa. Configure serviços e horários e compartilhe o link da agenda com seus clientes."
+            : "Este é o painel para atender seus clientes. Comece cadastrando sua empresa no formulário abaixo."}
         </p>
       </div>
       <Notices params={await searchParams} />
@@ -141,6 +142,22 @@ export default async function Company({
           Não foi possível carregar todos os dados. Verifique a conexão e a
           migração.
         </p>
+      )}
+      {!business && (
+        <section className="card stack" aria-label="Como preparar sua agenda">
+          <h2>Do cadastro ao primeiro agendamento</h2>
+          <div className="inline">
+            <span className="chip">1. Cadastre a empresa</span>
+            <span className="chip">2. Adicione um serviço</span>
+            <span className="chip">3. Defina os horários</span>
+            <span className="chip">4. Compartilhe seu link</span>
+          </div>
+          <p className="muted">
+            Depois de salvar sua empresa, os campos de serviços e horários
+            aparecerão aqui. Se você quer agendar um serviço em outra empresa,{" "}
+            <Link href="/empresas">encontre uma empresa</Link>.
+          </p>
+        </section>
       )}
       {business && (
         <section className="card inline between">
@@ -195,6 +212,10 @@ export default async function Company({
             <p className="muted">
               Horários de Brasília · uma empresa por conta no MVP.
             </p>
+            <small>
+              O nome e a descrição da empresa ficam públicos em Encontrar
+              empresas e no link da sua agenda.
+            </small>
             <button className="button">Salvar empresa</button>
           </form>
         </div>

@@ -1768,6 +1768,23 @@ textarea::placeholder {
 .workspace > .page-intro {
   padding-top: 0;
 }
+.page-intro.inline > div {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+.page-intro,
+.business-card {
+  overflow-wrap: anywhere;
+}
+.directory-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+.directory-search > .field {
+  flex: 1 1 240px;
+}
 .workspace .card h2 {
   font-size: 24px;
 }

@@ -20,42 +20,41 @@ export default async function Customer({
     data: { user },
   } = await db.auth.getUser();
   if (!user) redirect("/entrar");
-  const [appointments, catalog, profile, spending, privacy] = await Promise.all(
-    [
-      db
-        .from("appointments")
-        .select("*")
-        .eq("customer_id", user.id)
-        .order("starts_at", { ascending: false })
-        .limit(100),
-      db
-        .from("business_catalog")
-        .select("id,name,slug,description")
-        .order("name")
-        .limit(50),
-      db.from("profiles").select("display_name").eq("id", user.id).single(),
-      db.rpc("get_my_spending"),
-      db
-        .from("privacy_requests")
-        .select("id,requested_at,status")
-        .eq("user_id", user.id)
-        .order("requested_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ],
-  );
+  const [appointments, profile, spending, privacy] = await Promise.all([
+    db
+      .from("appointments")
+      .select("*")
+      .eq("customer_id", user.id)
+      .order("starts_at", { ascending: false })
+      .limit(100),
+    db.from("profiles").select("display_name").eq("id", user.id).single(),
+    db.rpc("get_my_spending"),
+    db
+      .from("privacy_requests")
+      .select("id,requested_at,status")
+      .eq("user_id", user.id)
+      .order("requested_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
   const items = (appointments.data || []) as Appointment[];
-  const hasError = [appointments, catalog, profile, spending, privacy].some(
+  const hasError = [appointments, profile, spending, privacy].some(
     (x) => x.error,
   );
   return (
     <AppShell active="cliente">
-      <div className="page-intro">
-        <span className="eyebrow">Seu espaço</span>
-        <h1>Olá, {profile.data?.display_name || "que bom ter você aqui"}.</h1>
-        <p className="muted">
-          Seus encontros, seus horários e seus dados em um só lugar.
-        </p>
+      <div className="page-intro inline between">
+        <div>
+          <span className="eyebrow">Painel do cliente</span>
+          <h1>Olá, {profile.data?.display_name || "que bom ter você aqui"}.</h1>
+          <p className="muted">
+            Aqui você agenda serviços em empresas e acompanha suas reservas.
+            Para atender seus clientes, use Minha empresa.
+          </p>
+        </div>
+        <Link className="button" href="/empresas">
+          Agendar um serviço
+        </Link>
       </div>
       <Notices params={await searchParams} />
       {hasError && (
@@ -95,29 +94,6 @@ export default async function Customer({
         <h2>Meus agendamentos</h2>
         <p className="muted">Últimos 100 registros · horários de Brasília.</p>
         <Appointments items={items} />
-      </section>
-      <section className="stack">
-        <h2>Encontre seu próximo horário</h2>
-        <div className="grid-3">
-          {catalog.data?.map((b) => (
-            <article className="card stack" key={b.id}>
-              <h3>{b.name}</h3>
-              <p className="muted">{b.description}</p>
-              <Link
-                className="button button-secondary"
-                href={`/agendar/${b.slug}`}
-              >
-                Ver horários
-              </Link>
-            </article>
-          ))}
-        </div>
-        {!catalog.data?.length && (
-          <p className="muted">
-            As empresas aparecerão aqui quando criarem suas agendas. Você também
-            pode usar o link enviado pela empresa.
-          </p>
-        )}
       </section>
       <section className="card stack">
         <h2>Você tem controle sobre seus dados</h2>

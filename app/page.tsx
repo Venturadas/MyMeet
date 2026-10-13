@@ -73,6 +73,7 @@ export default function Home() {
           <a className="nav-how" href="#como-funciona">
             Como funciona
           </a>
+          <Link href="/empresas">Agendar</Link>
           <Link className="button button-secondary button-small" href="/entrar">
             Entrar <Arrow />
           </Link>

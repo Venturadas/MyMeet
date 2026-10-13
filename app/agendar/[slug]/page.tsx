@@ -87,9 +87,12 @@ export default async function Booking({
         <Link href="/" aria-label="MyMeet, início">
           <Logo />
         </Link>
-        <Link href={user ? "/cliente" : `/entrar?next=/agendar/${slug}`}>
-          {user ? "Meus agendamentos" : "Entrar"}
-        </Link>
+        <div className="inline">
+          <Link href="/empresas">Encontrar empresas</Link>
+          <Link href={user ? "/cliente" : `/entrar?next=/agendar/${slug}`}>
+            {user ? "Meus agendamentos" : "Entrar"}
+          </Link>
+        </div>
       </nav>
       <div className="page-intro">
         <span className="eyebrow">Reserve um tempo para você</span>

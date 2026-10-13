@@ -38,6 +38,7 @@ export const config = {
     "/entrar",
     "/cliente/:path*",
     "/empresa/:path*",
+    "/empresas",
     "/agendar/:path*",
     "/reagendar/:path*",
     "/auth/:path*",

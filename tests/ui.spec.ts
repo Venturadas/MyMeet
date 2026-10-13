@@ -176,6 +176,44 @@ test("página inicial leva à demo, ao acesso e à privacidade", async ({
   ).toBeVisible();
 });
 
+test("buscar empresas é público e tem um caminho claro desde a página inicial", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("link", { name: "Agendar", exact: true }).click();
+  await expect(page).toHaveURL(/\/empresas$/);
+  await expect(
+    page.getByRole("heading", { name: "Encontrar empresas", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Encontrar empresas", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(
+    page.getByRole("button", { name: "Sair", exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("searchbox", { name: "Nome da empresa" })
+    .fill("Minha empresa");
+  await page.getByRole("button", { name: "Buscar empresas" }).click();
+  await expect(page).toHaveURL(/\/empresas\?q=Minha\+empresa$/);
+  await expect(page.getByRole("searchbox")).toHaveValue("Minha empresa");
+  await expect(
+    page.getByText("A busca de empresas reais aguarda a conexão com o banco.", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Ainda não há empresas cadastradas" }),
+  ).toHaveCount(0);
+  await page.getByRole("link", { name: "Limpar busca" }).click();
+  await expect(page).toHaveURL(/\/empresas$/);
+  await expect(page.getByRole("searchbox")).toHaveValue("");
+  await page.goto("/empresas?q=um&q=dois");
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Informe um nome de empresa" }),
+  ).toBeVisible();
+});
+
 test("painéis protegidos pedem acesso e agenda real informa conexão pendente", async ({
   page,
 }) => {
@@ -205,6 +243,7 @@ test("conteúdo cabe em celular de 320px e a demo mantém aviso ao rolar", async
     "/demo",
     "/entrar",
     "/privacidade",
+    "/empresas",
     "/agendar/exemplo",
   ]) {
     await page.goto(path);
