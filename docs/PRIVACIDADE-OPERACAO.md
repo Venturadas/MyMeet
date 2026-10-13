@@ -31,6 +31,8 @@ Banco/Auth: Supabase `us-west-2`, Estados Unidos. Aplicação: Vercel `iad1`, Es
 
 Ative MFA para as contas administrativas Supabase/Vercel/GitHub, limite quem tem acesso e preserve as políticas RLS. Nunca entregue `service_role` aos hosts. Configure uma rotina de backup protegido e teste a restauração em ambiente separado antes de operar com dados reais; um backup só é útil se a restauração funcionar. A disponibilidade/retencão dos backups do provedor depende do plano contratado e não foi certificada por estes testes.
 
+Na consulta de 13/10/2026 ao endpoint de backups do projeto, não havia backups disponíveis e PITR estava desativado. As migrações versionadas recuperam a estrutura, mas não os dados dos clientes. Essa pendência precisa ser resolvida antes de uso com dados reais; nenhuma contratação ou teste de restauração de backup de produção foi realizado.
+
 Em caso de incidente, restrinja acessos e registre fatos, impacto, titulares afetados e medidas. Avalie as comunicações exigidas pela LGPD e regulamentação aplicável. Nunca inclua credenciais nas comunicações ou logs. Use dados fictícios em testes e previews.
 
 ## Abrir o cadastro

@@ -84,10 +84,11 @@ export default function Privacy() {
         </p>
         <p>
           Conta e perfil permanecem durante o uso do serviço e a análise de
-          solicitações. A regra operacional do MVP limita o histórico de
-          reservas encerradas e a auditoria a 12 meses, com revisão mensal pelo
-          responsável. Retenção adicional exige uma obrigação ou justificativa
-          aplicável, documentada. Não há descarte automático neste momento.
+          solicitações. A regra operacional do MVP prevê revisão mensal das
+          reservas encerradas e da auditoria após 12 meses, para excluir ou
+          anonimizar o que já não for necessário. Retenção adicional exige uma
+          obrigação ou justificativa aplicável, documentada. Não há descarte
+          automático neste momento.
         </p>
         <p>
           Solicitações feitas pelo painel são registradas imediatamente. Pedidos
