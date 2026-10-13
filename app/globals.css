@@ -433,16 +433,6 @@ details[open] > .muted {
 .empty-state h3 {
   margin-bottom: 8px;
 }
-.metric {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.metric > strong {
-  font-size: 28px;
-  line-height: 1.2;
-  letter-spacing: -0.04em;
-}
 .appointment-card h3 {
   margin-block: 4px;
 }

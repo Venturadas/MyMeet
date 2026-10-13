@@ -139,13 +139,17 @@ async function reconcile(
     (checkout.merchant_id && checkout.merchant_id !== verified.merchantId)
   )
     throw new Error("invalid_payment");
+  // Terminal provider responses can omit the QR expiration. Preserve the
+  // durable expiration already set before payment creation in that case.
+  const expiresAt = verified.expiresAt || checkout.expires_at;
+  if (!providerDate(expiresAt)) throw new Error("invalid_payment");
   const db = admin();
   const { error: bindError } = await db.rpc("bind_pix_checkout", {
     p_checkout_id: checkout.id,
     p_payment_id: verified.id,
     p_status: verified.status,
     p_event_at: verified.eventAt,
-    p_expires_at: verified.expiresAt,
+    p_expires_at: expiresAt,
     p_merchant_id: verified.merchantId,
   });
   if (bindError) throw new Error("billing_storage_unavailable");
@@ -155,7 +159,7 @@ async function reconcile(
     p_status: verified.status,
     p_paid_at: verified.paidAt,
     p_event_at: verified.eventAt,
-    p_expires_at: verified.expiresAt,
+    p_expires_at: expiresAt,
     p_merchant_id: verified.merchantId,
     p_amount_cents: BUSINESS_PRICE_CENTS,
     p_currency: BUSINESS_CURRENCY,
