@@ -13,6 +13,8 @@ O plano empresa custa **R$ 14,99 por 30 dias**, pago por **Pix** no Mercado Pago
 
 As páginas públicas continuam mostrando o plano sem cobrar enquanto a integração estiver desabilitada. Não há bypass administrativo no frontend, ativação por URL de retorno ou simulação de pagamento.
 
+`MERCADO_PAGO_BILLING_ENABLED` pausa a criação de novas cobranças. Com credenciais completas, a consulta autenticada de status continua validando a conta recebedora, e o webhook continua reconciliando pagamentos e estornos já existentes. Pausar vendas não impede tratar o histórico financeiro.
+
 ## Fluxo e dados
 
 - `POST /api/billing/checkout` exige sessão validada no Supabase, e-mail confirmado e origem HTTPS autorizada. A requisição não aceita preço, ID de usuário, empresa ou referência do navegador.

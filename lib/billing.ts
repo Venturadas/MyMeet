@@ -16,21 +16,25 @@ import {
 
 const API = "https://api.mercadopago.com";
 
+export function billingHasCredentials() {
+  return Boolean(
+    process.env.MERCADO_PAGO_ACCESS_TOKEN &&
+    process.env.MERCADO_PAGO_WEBHOOK_SECRET &&
+    process.env.SUPABASE_SERVICE_ROLE_KEY &&
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    trustedBillingOrigin(process.env.NEXT_PUBLIC_SITE_URL),
+  );
+}
+
 export function billingIsConfigured() {
   return (
     process.env.MERCADO_PAGO_BILLING_ENABLED === "true" &&
-    Boolean(
-      process.env.MERCADO_PAGO_ACCESS_TOKEN &&
-      process.env.MERCADO_PAGO_WEBHOOK_SECRET &&
-      process.env.SUPABASE_SERVICE_ROLE_KEY &&
-      process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      trustedBillingOrigin(process.env.NEXT_PUBLIC_SITE_URL),
-    )
+    billingHasCredentials()
   );
 }
 
 function admin() {
-  if (!billingIsConfigured()) throw new Error("billing_disabled");
+  if (!billingHasCredentials()) throw new Error("billing_disabled");
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -214,12 +218,14 @@ async function ownPaymentStatus(
 
 export async function getBusinessBillingStatus(
   userId: string,
+  merchantId?: number,
 ): Promise<BusinessBillingStatus> {
+  const verifiedMerchant = merchantId || (await merchant());
   const { data, error } = await admin().rpc("get_latest_pix_checkout", {
     p_user_id: userId,
   });
   if (error) throw new Error("billing_storage_unavailable");
-  return ownPaymentStatus(userId, data);
+  return ownPaymentStatus(userId, data, verifiedMerchant);
 }
 
 export async function startBusinessPix(user: {
@@ -228,9 +234,9 @@ export async function startBusinessPix(user: {
 }): Promise<BusinessBillingStatus> {
   // Reconcile the previous payment before creating a renewal, including when
   // the buyer retries directly and its approval notification was delayed.
-  const current = await getBusinessBillingStatus(user.id);
-  if (current.subscription.active) return current;
   const merchantId = await merchant();
+  const current = await getBusinessBillingStatus(user.id, merchantId);
+  if (current.subscription.active) return current;
   const db = admin();
   const { data: claim, error } = await db.rpc("claim_pix_checkout", {
     p_user_id: user.id,

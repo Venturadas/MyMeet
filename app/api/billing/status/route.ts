@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { billingIsConfigured, getBusinessBillingStatus } from "@/lib/billing";
+import { billingHasCredentials, getBusinessBillingStatus } from "@/lib/billing";
 import { trustedBillingOrigin } from "@/lib/billing-policy";
 import { isConfigured, supabase } from "@/lib/supabase";
 
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
       { error: "Entre na sua conta para consultar o pagamento." },
       401,
     );
-  if (!billingIsConfigured())
+  if (!billingHasCredentials())
     return reply({ error: "Pagamento indisponível no momento." }, 503);
   try {
     // The caller cannot supply a payment ID or another user's reference.

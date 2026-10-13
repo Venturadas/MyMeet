@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import {
-  billingIsConfigured,
+  billingHasCredentials,
   processMercadoPagoNotification,
 } from "@/lib/billing";
 import { verifyMercadoPagoSignature } from "@/lib/billing-policy";
@@ -42,7 +42,7 @@ async function smallBody(request: Request): Promise<unknown> {
 }
 
 export async function POST(request: Request) {
-  if (!billingIsConfigured()) return response(503);
+  if (!billingHasCredentials()) return response(503);
   const url = new URL(request.url);
   const id = verifyMercadoPagoSignature(
     url,
