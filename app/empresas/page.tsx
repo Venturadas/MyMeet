@@ -30,7 +30,7 @@ export default async function Companies({
   const search = z
     .string()
     .trim()
-    .max(80)
+    .max(100)
     .safeParse(params.q ?? "");
   const term = search.success ? search.data : "";
   const page =
@@ -94,7 +94,7 @@ export default async function Companies({
             key={term}
             type="search"
             name="q"
-            maxLength={80}
+            maxLength={100}
             defaultValue={term}
             placeholder="Qual empresa você procura?"
           />
@@ -104,7 +104,7 @@ export default async function Companies({
       </form>
       {!search.success && (
         <p className="notice error" role="alert">
-          Informe um nome de empresa com até 80 caracteres.
+          Informe um nome de empresa com até 100 caracteres.
         </p>
       )}
       {search.success && (!configured || unavailable) ? (
