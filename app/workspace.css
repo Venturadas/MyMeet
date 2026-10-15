@@ -351,7 +351,7 @@
 .media-input input[type="file"] {
   width: 100%;
   max-width: 100%;
-  font-size: 0.85rem;
+  font-size: 16px;
 }
 .media-input input[type="file"]::file-selector-button {
   min-height: 36px;
@@ -468,7 +468,11 @@
 }
 .public-company-header {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
+}
+.public-company-header > * {
+  min-width: 0;
 }
 .public-company-cover {
   width: 100%;
