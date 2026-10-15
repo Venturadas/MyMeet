@@ -5,7 +5,7 @@
       <p style="font-size:22px;font-weight:bold;color:#2563eb">NuvemMeet</p>
       <h1 style="font-size:24px">Confirme seu e-mail</h1>
       <p style="line-height:1.6">Falta um passo para acessar sua agenda. Confirme seu endereço usando o botão abaixo.</p>
-      <p style="margin:28px 0"><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=signup" style="display:inline-block;padding:14px 22px;border-radius:999px;background:#2563eb;color:#fff;text-decoration:none;font-weight:bold">Confirmar minha conta</a></p>
+      <p style="margin:28px 0"><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=signup&amp;redirect_to={{ .RedirectTo | urlquery }}" style="display:inline-block;padding:14px 22px;border-radius:999px;background:#2563eb;color:#fff;text-decoration:none;font-weight:bold">Confirmar minha conta</a></p>
       <p style="font-size:14px;line-height:1.6">O link é pessoal e pode ser usado uma vez. Se você não solicitou esta conta, ignore este e-mail.</p>
     </main>
   </body>

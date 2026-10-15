@@ -6,11 +6,21 @@ SaaS de agendas para empresas e clientes. Next.js, TypeScript, Supabase e Mercad
 
 Clientes criam uma conta gratuita, encontram a empresa em `/empresas`, escolhem serviço/data/horário em `/agendar/[slug]` e acompanham suas reservas em `/cliente`.
 
-Empresas pagam R$ 14,99 por Pix para obter 30 dias de acesso. Após confirmação do Mercado Pago no backend, podem criar a empresa informando somente o nome; o link é gerado automaticamente. Serviços, expediente, agendamentos, compartilhamento e análise ficam em `/empresa`.
+Empresas pagam R$ 14,99 por Pix para obter 30 dias de acesso. Após confirmação do Mercado Pago no backend, podem criar a empresa informando somente o nome; o link é gerado automaticamente. Serviços, expediente, agendamentos, compartilhamento e análise ficam em `/empresa`, organizados por um menu lateral no computador e um menu recolhido no celular. O cadastro inicial continua exigindo somente o nome.
 
 O dashboard usa dados reais do banco: filtros de 7 dias, 30 dias, 3 meses e 1 ano; gráfico diário de atendimentos concluídos e tabela por dia. Total/concluídos/cancelados usam a data do atendimento no período escolhido, em Brasília. Futuros mostra todos os próximos atendimentos pendentes/confirmados, identificado na interface. Concluído exige o status `completed`. A tabela é paginada; os totais e o gráfico usam o período inteiro.
 
 Ao vencer o acesso, o banco suspende novas reservas, catálogo e painel da empresa. Históricos e cancelamentos de reservas existentes permanecem protegidos e acessíveis ao titular. O Pix é renovado manualmente; não há débito automático.
+
+## Perfis, fotos e avaliações
+
+O perfil público da empresa reúne logo, capa, contatos, serviços, expediente, galeria de até 12 fotos, equipe e avaliações reais. Profissionais são uma apresentação da equipe; a disponibilidade segue a agenda única da empresa, sem capacidade paralela por profissional.
+
+Clientes têm seções de início, agendamentos, favoritas, avaliações, perfil e configurações. Nome, usuário, telefone e avatar são privados; avaliações publicam somente usuário ou primeiro nome, nota e comentário. Uma avaliação exige agendamento próprio concluído; a empresa não pode alterar a nota. Favoritas indisponíveis continuam removíveis.
+
+Imagens passam por decodificação, limites de tamanho/pixels, orientação e remoção de metadados no servidor. Apenas WebP comprimido vai ao Storage: `company-images` é público, `user-avatars` é privado. O banco armazena referências. As políticas e RPCs validam o titular e assinatura da empresa; imagens em uso não podem ser apagadas diretamente. Nunca use o otimizador público para avatares privados.
+
+Mudanças de e-mail/senha nas configurações exigem a senha atual. A recuperação aceita somente uma autorização de 15 minutos emitida após validar o link de recuperação, vinculada à conta e à sessão em cookie HttpOnly assinado; uma sessão comum não abre a tela de redefinição. E-mail exige confirmação nos endereços antigo e novo pelo Supabase Auth. Notificações pequenas e acessíveis informam o resultado das ações; não há preferências fictícias de notificações.
 
 ## Desenvolvimento
 
@@ -21,13 +31,13 @@ npm ci
 npm run dev
 ```
 
-Copie `.env.example` para `.env.local` sem sobrescrever configurações existentes. O aplicativo utiliza a URL e a chave pública do Supabase para autenticação e operações comuns. A chave administrativa é exclusiva do módulo de pagamento no servidor. Nenhum segredo pode usar o prefixo `NEXT_PUBLIC_`, aparecer no Git, no navegador ou nos logs.
+Copie `.env.example` para `.env.local` sem sobrescrever configurações existentes. O aplicativo utiliza a URL e a chave pública do Supabase para autenticação e operações comuns. A chave administrativa fica exclusivamente no servidor: verifica pagamentos e deriva a assinatura temporária que autoriza a recuperação de senha. Nenhum segredo pode usar o prefixo `NEXT_PUBLIC_`, aparecer no Git, no navegador ou nos logs.
 
 Sem configuração do banco, as rotas públicas indicam indisponibilidade e as ações reais são bloqueadas. Não há fallback com dados fictícios.
 
 ## Banco e pagamentos
 
-Aplique `supabase/migrations/` em ordem de nome. As duas primeiras migrations já existem no projeto original e não devem ser reaplicadas. Revise compatibilidade antes de usar outro projeto. A migration de assinaturas mantém dados existentes e não concede acesso pago automaticamente.
+Aplique `supabase/migrations/` em ordem de nome. No projeto hospedado, as três primeiras migrations (estrutura, expediente atômico e assinaturas) já foram aplicadas e não devem ser reaplicadas. A migration `202610140001_profiles_reviews.sql` acrescenta os recursos de perfis, avaliações e mídia sem recriar contas ou conceder assinatura. Revise compatibilidade antes de usar outro projeto. A migration de assinaturas mantém dados existentes e não concede acesso pago automaticamente.
 
 RLS protege contas/empresas/agendamentos. Assinaturas são consultáveis apenas pelo próprio usuário; o ledger financeiro é privado. Somente o backend privilegiado pode aplicar uma cobrança verificada. Intents persistentes, transações únicas, bloqueios e deduplicação impedem que retries acrescentem dias ou que o navegador marque um Pix como pago.
 
@@ -51,7 +61,7 @@ cd ../..
 npm run test:db
 ```
 
-Playwright verifica navegação, marca, autenticação, busca, Pix e telas de 320/390px. O runner SQL usa PostgreSQL descartável e cobre isolamento, concorrência, reservas, assinaturas, cobrança e análise. Fixtures existem somente nos testes; nenhuma é exibida como empresa ou atendimento real. Testes hospedados usam IDs isolados e removem exclusivamente seus próprios dados ao terminar. Não desative TLS para executar testes no ambiente com proxy.
+Playwright verifica navegação, marca, autenticação, busca, Pix, notificações e processamento seguro de imagens. A revisão conectada também verifica painéis e perfis em celulares, tablet e desktop. O runner SQL usa PostgreSQL descartável e cobre isolamento, concorrência, reservas, assinaturas, cobrança e análise. Fixtures existem somente nos testes; nenhuma é exibida como empresa ou atendimento real. Testes hospedados usam IDs isolados e removem exclusivamente seus próprios dados ao terminar. Não desative TLS para executar testes no ambiente com proxy.
 
 ## Operação e privacidade
 

@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { isConfigured, supabase } from "@/lib/supabase";
 import { hasBusinessSubscription } from "@/lib/subscription";
-import { saveBusiness, saveService, saveHours } from "@/lib/actions";
-import {
+import type {
   Appointment,
   Business,
   BusinessHours,
   Service,
-  money,
 } from "@/lib/types";
 import {
   analyticsRange,
@@ -17,143 +16,120 @@ import {
   analyticsRanges,
   parseBusinessAnalytics,
 } from "@/lib/business-analytics";
+import { publicBusinessLink } from "@/lib/public-business-link";
 import { AppShell } from "@/components/app-shell";
 import { Notices } from "@/components/notices";
 import { Appointments } from "@/components/appointments";
 import { BusinessShare } from "@/components/business-share";
 import { BusinessAnalytics } from "@/components/business-analytics";
-import { publicBusinessLink } from "@/lib/public-business-link";
+import {
+  CompanyCreationForm,
+  CompanyHoursForm,
+  CompanyProfileForm,
+  CompanyProfessionals,
+  CompanyServices,
+  type CompanyProfessional,
+} from "@/components/company-forms";
+import {
+  CompanyClients,
+  CompanyReviewSummary,
+  CompanyReviews,
+  parseCompanyClients,
+  parseCompanyReviewSummary,
+  parseCompanyReviews,
+} from "@/components/company-sections";
+import { GalleryManager } from "@/components/media-gallery";
+import { MediaUploader } from "@/components/media-uploader";
 
 export const metadata: Metadata = { title: "Minha empresa" };
-const weekdays = [
-  "Domingo",
-  "Segunda",
-  "Terça",
-  "Quarta",
-  "Quinta",
-  "Sexta",
-  "Sábado",
-];
+const tabs = [
+  "dashboard",
+  "agenda",
+  "servicos",
+  "clientes",
+  "avaliacoes",
+  "perfil",
+  "galeria",
+  "configuracoes",
+] as const;
+type CompanyTab = (typeof tabs)[number];
+const tabLabels: Record<CompanyTab, string> = {
+  dashboard: "Dashboard",
+  agenda: "Agenda",
+  servicos: "Serviços",
+  clientes: "Clientes",
+  avaliacoes: "Avaliações",
+  perfil: "Perfil da empresa",
+  galeria: "Galeria",
+  configuracoes: "Configurações",
+};
+const appointmentColumns =
+  "id,business_id,service_id,service_name,customer_id,customer_name,starts_at,ends_at,status,price_cents,comment";
+const pageSize = 25;
+const gallerySchema = z
+  .array(
+    z.object({
+      id: z.uuid(),
+      storage_path: z.string(),
+      position: z.number().int().min(0).max(11),
+    }),
+  )
+  .max(12);
+const professionalsSchema = z
+  .array(
+    z.object({
+      id: z.uuid(),
+      name: z.string().min(2).max(100),
+      title: z.string().max(120),
+      active: z.boolean(),
+      photo_path: z.string().nullable(),
+    }),
+  )
+  .max(20);
 
-function ServiceForm({ service }: { service?: Service }) {
+function LoadError({ label = "os dados" }: { label?: string }) {
   return (
-    <form className="stack service-form" action={saveService}>
-      {service && <input type="hidden" name="service_id" value={service.id} />}
-      <label className="field">
-        Nome do serviço
-        <input
-          name="name"
-          minLength={2}
-          maxLength={100}
-          defaultValue={service?.name}
-          required
-        />
-      </label>
-      <div className="grid-2">
-        <label className="field">
-          Duração (minutos)
-          <input
-            type="number"
-            name="duration_minutes"
-            min={15}
-            max={480}
-            step={15}
-            defaultValue={service?.duration_minutes || 30}
-            required
-          />
-        </label>
-        <label className="field">
-          Preço (R$)
-          <input
-            name="price"
-            inputMode="decimal"
-            placeholder="0,00"
-            defaultValue={service ? (service.price_cents / 100).toFixed(2) : ""}
-            pattern="[0-9]{1,6}([.,][0-9]{1,2})?"
-            required
-          />
-        </label>
-      </div>
-      <details>
-        <summary>Descrição opcional</summary>
-        <label className="field">
-          <span className="sr-only">Descrição do serviço</span>
-          <textarea
-            name="description"
-            maxLength={500}
-            defaultValue={service?.description}
-          />
-        </label>
-      </details>
-      {service ? (
-        <label className="inline">
-          <input
-            type="checkbox"
-            name="active"
-            defaultChecked={service.active}
-          />
-          Disponível para agendar
-        </label>
-      ) : (
-        <input type="hidden" name="active" value="on" />
-      )}
-      <button className="button">
-        {service ? "Salvar serviço" : "Adicionar serviço"}
-      </button>
-    </form>
+    <p className="notice error" role="alert">
+      Não foi possível carregar {label}. Atualize a página e tente novamente.
+    </p>
   );
 }
-
-function BusinessForm({ business }: { business?: Business }) {
+function Pagination({
+  tab,
+  page,
+  hasNext,
+  extras = "",
+}: {
+  tab: CompanyTab;
+  page: number;
+  hasNext: boolean;
+  extras?: string;
+}) {
+  if (page === 1 && !hasNext) return null;
   return (
-    <form className="stack" action={saveBusiness}>
-      <label className="field">
-        Nome da empresa
-        <input
-          name="name"
-          maxLength={100}
-          minLength={2}
-          defaultValue={business?.name}
-          autoComplete="organization"
-          required
-        />
-      </label>
-      {business && (
-        <>
-          <label className="field">
-            Link da agenda
-            <input
-              name="slug"
-              maxLength={60}
-              minLength={3}
-              pattern="[a-z0-9]+(-[a-z0-9]+)*"
-              defaultValue={business.slug}
-              required
-            />
-            <small>Letras minúsculas, números e hífens.</small>
-          </label>
-          <details>
-            <summary>Descrição opcional</summary>
-            <label className="field">
-              <span className="sr-only">Sobre a empresa</span>
-              <textarea
-                name="description"
-                maxLength={500}
-                defaultValue={business.description}
-              />
-            </label>
-          </details>
-        </>
+    <nav className="inline between report-pagination" aria-label="Paginação">
+      {page > 1 ? (
+        <Link
+          className="button button-secondary"
+          href={`/empresa?tab=${tab}&page=${page - 1}${extras}`}
+          prefetch={false}
+        >
+          Anterior
+        </Link>
+      ) : (
+        <span />
       )}
-      <small className="muted">
-        {business
-          ? "Nome, link e descrição são públicos."
-          : "Seu nome ficará público. O link da agenda será criado automaticamente."}
-      </small>
-      <button className="button">
-        {business ? "Salvar empresa" : "Criar empresa"}
-      </button>
-    </form>
+      <small>Página {page}</small>
+      {hasNext && (
+        <Link
+          className="button button-secondary"
+          href={`/empresa?tab=${tab}&page=${page + 1}${extras}`}
+          prefetch={false}
+        >
+          Próxima
+        </Link>
+      )}
+    </nav>
   );
 }
 
@@ -164,167 +140,61 @@ export default async function Company({
     notice?: string;
     error?: string;
     range?: string | string[];
+    tab?: string;
+    page?: string;
+    status?: string;
+    date?: string;
   }>;
 }) {
   if (!isConfigured()) redirect("/entrar");
   const params = await searchParams;
+  const tab: CompanyTab =
+    tabs.find((value) => value === params.tab) || "dashboard";
   const range = analyticsRange(params.range);
+  const parsedPage = z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(4001)
+    .safeParse(params.page || "1");
+  const page = parsedPage.success ? parsedPage.data : 1;
   const db = await supabase();
   const {
     data: { user },
   } = await db.auth.getUser();
-  if (!user) redirect("/entrar?next=/empresa");
+  if (!user)
+    redirect(`/entrar?next=${encodeURIComponent(`/empresa?tab=${tab}`)}`);
   if (!(await hasBusinessSubscription(db))) redirect("/planos");
+  const businessColumns =
+    "id,owner_id,name,slug,description,timezone" +
+    (tab === "perfil"
+      ? ",category,city,state,address,phone,whatsapp,instagram,logo_path,cover_path"
+      : "");
   const { data, error } = await db
     .from("businesses")
-    .select("*")
+    .select(businessColumns)
     .eq("owner_id", user.id)
     .maybeSingle();
   const business = data as Business | null;
-  const sharing = business ? await publicBusinessLink(business.slug) : null;
-  let services: Service[] = [];
-  let hours: BusinessHours[] = [];
-  let appointments: Appointment[] = [];
-  let report = null;
-  let loadError = Boolean(error);
-  let appointmentsError = false;
-  let settingsError = false;
-  if (business) {
-    const [s, h, a, analytics] = await Promise.all([
-      db
-        .from("services")
-        .select("*")
-        .eq("business_id", business.id)
-        .order("name"),
-      db.from("business_hours").select("*").eq("business_id", business.id),
-      db
-        .from("appointments")
-        .select("*")
-        .eq("business_id", business.id)
-        .order("starts_at", { ascending: false })
-        .limit(100),
-      db.rpc("business_analytics", { p_range: range }),
-    ]);
-    services = (s.data || []) as Service[];
-    hours = (h.data || []) as BusinessHours[];
-    appointments = (a.data || []) as Appointment[];
-    report = analytics.error
-      ? null
-      : parseBusinessAnalytics(analytics.data, range);
-    loadError ||= Boolean(s.error || h.error || a.error);
-    appointmentsError = Boolean(a.error);
-    settingsError = Boolean(s.error || h.error);
-  }
-  const needsSetup = !services.length || !hours.length;
-  const settings =
-    business && !settingsError ? (
-      <section className="stack" aria-labelledby="settings-heading">
-        <h2 id="settings-heading">Configurar agenda</h2>
-        <details className="settings-section" open={!services.length}>
-          <summary>
-            Serviços
-            {services.length
-              ? ` (${services.length})`
-              : " · adicione o primeiro"}
-          </summary>
-          <div className="stack">
-            <ServiceForm />
-            {services.length > 0 && (
-              <div className="service-list">
-                {services.map((service) => (
-                  <details className="service-row" key={service.id}>
-                    <summary>
-                      <span>{service.name}</span>
-                      <small>
-                        {service.duration_minutes} min ·{" "}
-                        {money(service.price_cents)}
-                        {!service.active ? " · indisponível" : ""}
-                      </small>
-                    </summary>
-                    <ServiceForm service={service} />
-                  </details>
-                ))}
-              </div>
-            )}
-          </div>
-        </details>
-        <details className="settings-section" open={!hours.length}>
-          <summary>Horários de atendimento</summary>
-          <form className="stack" action={saveHours}>
-            <small className="muted">
-              Horário de Brasília · um período por dia, em intervalos de 15
-              minutos.
-            </small>
-            {weekdays.map((day, i) => {
-              const h = hours.find((hour) => hour.weekday === i);
-              return (
-                <div className="hours-row" key={day}>
-                  <label className="inline">
-                    <input
-                      name={`day_${i}`}
-                      type="checkbox"
-                      defaultChecked={Boolean(h)}
-                    />
-                    {day}
-                  </label>
-                  <label className="field">
-                    Início
-                    <input
-                      name={`start_${i}`}
-                      type="time"
-                      step={900}
-                      defaultValue={h?.start_time.slice(0, 5) || "09:00"}
-                      required
-                    />
-                  </label>
-                  <label className="field">
-                    Fim
-                    <input
-                      name={`end_${i}`}
-                      type="time"
-                      step={900}
-                      defaultValue={h?.end_time.slice(0, 5) || "18:00"}
-                      required
-                    />
-                  </label>
-                </div>
-              );
-            })}
-            <button className="button">Salvar horários</button>
-          </form>
-        </details>
-        <details className="settings-section">
-          <summary>Informações da empresa</summary>
-          <BusinessForm business={business} />
-        </details>
-      </section>
-    ) : null;
-  return (
-    <AppShell active="empresa">
-      <div className="page-intro">
-        <span className="eyebrow">Minha empresa</span>
-        <h1>{business ? business.name : "Crie sua empresa"}</h1>
-        {!business && (
-          <p className="muted">
-            Comece pelo nome. Depois, adicione um serviço e seus horários.
-          </p>
-        )}
-      </div>
-      <Notices params={params} />
-      {loadError && (
-        <p className="notice error" role="alert">
-          Não foi possível carregar os dados da empresa. Atualize a página e
-          tente novamente.
-        </p>
-      )}
-      {!business && !loadError && (
-        <section className="setup-form" aria-label="Criar empresa">
-          <BusinessForm />
-        </section>
-      )}
-      {business && (
-        <>
-          {needsSetup && settings}
+  let content: React.ReactNode = null;
+  if (business && !error) {
+    if (tab === "dashboard") {
+      const [analytics, upcoming] = await Promise.all([
+        db.rpc("business_analytics", { p_range: range }),
+        db
+          .from("appointments")
+          .select(appointmentColumns)
+          .eq("business_id", business.id)
+          .in("status", ["pending", "confirmed"])
+          .gte("starts_at", new Date().toISOString())
+          .order("starts_at")
+          .limit(3),
+      ]);
+      const report = analytics.error
+        ? null
+        : parseBusinessAnalytics(analytics.data, range);
+      content = (
+        <div className="stack">
           <section
             className="dashboard stack"
             aria-labelledby="analytics-heading"
@@ -336,6 +206,7 @@ export default async function Company({
                   <Link
                     key={value}
                     href={`/empresa?range=${value}`}
+                    prefetch={false}
                     aria-current={value === range ? "page" : undefined}
                     scroll={false}
                   >
@@ -345,34 +216,236 @@ export default async function Company({
               </nav>
             </div>
             {report ? (
-              <BusinessAnalytics key={range} report={report} />
+              <>
+                <p className="company-today">
+                  <strong>{report.days.at(-1)!.appointments}</strong>{" "}
+                  {report.days.at(-1)!.appointments === 1
+                    ? "agendamento hoje"
+                    : "agendamentos hoje"}
+                </p>
+                <BusinessAnalytics key={range} report={report} />
+              </>
             ) : (
-              <p className="notice error" role="alert">
-                Não foi possível carregar a análise. Atualize a página para
-                tentar novamente.
-              </p>
+              <LoadError label="a análise" />
             )}
           </section>
-          <section
-            className="stack agenda-section"
-            aria-labelledby="appointments-heading"
-          >
+          <section className="stack" aria-labelledby="upcoming-heading">
             <div className="inline between">
-              <h2 id="appointments-heading">Agendamentos</h2>
-              <small className="muted">Últimos 100 registros</small>
+              <h2 id="upcoming-heading">Próximos agendamentos</h2>
+              <Link href="/empresa?tab=agenda" prefetch={false}>
+                Ver agenda
+              </Link>
             </div>
-            {appointmentsError ? (
-              <p className="notice error" role="alert">
-                Não foi possível carregar os agendamentos.
-              </p>
+            {upcoming.error ? (
+              <LoadError label="os próximos agendamentos" />
             ) : (
               <Appointments
-                items={appointments}
+                items={(upcoming.data || []) as Appointment[]}
                 host
                 timezone={business.timezone}
+                returnTo="/empresa?tab=agenda"
               />
             )}
           </section>
+          <div className="company-setup-links inline">
+            <Link href="/empresa?tab=servicos" prefetch={false}>
+              Configurar serviços
+            </Link>
+            <Link href="/empresa?tab=configuracoes" prefetch={false}>
+              Horários de atendimento
+            </Link>
+            <Link href="/empresa?tab=perfil" prefetch={false}>
+              Compartilhar agenda
+            </Link>
+          </div>
+        </div>
+      );
+    } else if (tab === "agenda") {
+      const status =
+        ["pending", "confirmed", "completed", "cancelled"].find(
+          (value) => value === params.status,
+        ) || "";
+      const dateResult = z.iso.date().safeParse(params.date);
+      const date = dateResult.success ? dateResult.data : "";
+      let query = db
+        .from("appointments")
+        .select(appointmentColumns, { count: "exact" })
+        .eq("business_id", business.id);
+      if (status) query = query.eq("status", status);
+      if (date) {
+        const start = new Date(`${date}T00:00:00-03:00`);
+        query = query
+          .gte("starts_at", start.toISOString())
+          .lt("starts_at", new Date(start.getTime() + 86400000).toISOString());
+      }
+      const appointments = await query
+        .order("starts_at", { ascending: false })
+        .order("id")
+        .range((page - 1) * pageSize, page * pageSize - 1);
+      const extras = `${status ? `&status=${status}` : ""}${date ? `&date=${date}` : ""}`;
+      content = (
+        <div className="stack">
+          <form
+            className="company-agenda-filter inline"
+            action="/empresa"
+            method="get"
+          >
+            <input type="hidden" name="tab" value="agenda" />
+            <label className="field">
+              Status
+              <select name="status" defaultValue={status}>
+                <option value="">Todos</option>
+                <option value="pending">Aguardando confirmação</option>
+                <option value="confirmed">Confirmados</option>
+                <option value="completed">Concluídos</option>
+                <option value="cancelled">Cancelados</option>
+              </select>
+            </label>
+            <label className="field">
+              Data
+              <input name="date" type="date" defaultValue={date} />
+            </label>
+            <button className="button button-secondary">Filtrar</button>
+            {(status || date) && (
+              <Link href="/empresa?tab=agenda" prefetch={false}>
+                Limpar
+              </Link>
+            )}
+          </form>
+          {appointments.error ? (
+            <LoadError label="os agendamentos" />
+          ) : (
+            <>
+              <small className="muted">
+                {appointments.count || 0}{" "}
+                {(appointments.count || 0) === 1
+                  ? "agendamento"
+                  : "agendamentos"}
+              </small>
+              <Appointments
+                items={(appointments.data || []) as Appointment[]}
+                host
+                timezone={business.timezone}
+                returnTo="/empresa?tab=agenda"
+              />
+              <Pagination
+                tab={tab}
+                page={page}
+                hasNext={page * pageSize < (appointments.count || 0)}
+                extras={extras}
+              />
+            </>
+          )}
+        </div>
+      );
+    } else if (tab === "servicos") {
+      const services = await db
+        .from("services")
+        .select(
+          "id,business_id,name,description,duration_minutes,price_cents,active",
+        )
+        .eq("business_id", business.id)
+        .order("name");
+      content = services.error ? (
+        <LoadError label="os serviços" />
+      ) : (
+        <CompanyServices services={(services.data || []) as Service[]} />
+      );
+    } else if (tab === "clientes") {
+      const result = await db.rpc("business_client_summary", {
+        p_limit: pageSize + 1,
+        p_offset: (page - 1) * pageSize,
+      });
+      const clients = result.error ? null : parseCompanyClients(result.data);
+      content = clients ? (
+        <div className="stack">
+          <small className="muted">Somente dados dos seus agendamentos.</small>
+          <CompanyClients
+            clients={clients.slice(0, pageSize)}
+            timezone={business.timezone}
+          />
+          <Pagination
+            tab={tab}
+            page={page}
+            hasNext={clients.length > pageSize}
+          />
+        </div>
+      ) : (
+        <LoadError label="os clientes" />
+      );
+    } else if (tab === "avaliacoes") {
+      const [summaryResult, reviewsResult] = await Promise.all([
+        db.rpc("business_review_summary"),
+        db
+          .from("business_reviews_public")
+          .select("id,rating,comment,reviewer_name,created_at")
+          .eq("business_id", business.id)
+          .order("created_at", { ascending: false })
+          .order("id")
+          .range((page - 1) * 20, page * 20 - 1),
+      ]);
+      const summary = summaryResult.error
+        ? null
+        : parseCompanyReviewSummary(summaryResult.data);
+      const reviews = reviewsResult.error
+        ? null
+        : parseCompanyReviews(reviewsResult.data);
+      content = (
+        <div className="stack">
+          {summary ? (
+            <CompanyReviewSummary summary={summary} />
+          ) : (
+            <LoadError label="a média das avaliações" />
+          )}
+          {reviews ? (
+            <CompanyReviews reviews={reviews} timezone={business.timezone} />
+          ) : (
+            <LoadError label="as avaliações" />
+          )}
+          {summary && reviews && (
+            <Pagination
+              tab={tab}
+              page={page}
+              hasNext={page * 20 < summary.count}
+            />
+          )}
+        </div>
+      );
+    } else if (tab === "perfil") {
+      const [professionalsResult, sharing] = await Promise.all([
+        db
+          .from("business_professionals")
+          .select("id,name,title,active,photo_path")
+          .eq("business_id", business.id)
+          .order("name")
+          .limit(20),
+        publicBusinessLink(business.slug),
+      ]);
+      const professionals = professionalsResult.error
+        ? null
+        : professionalsSchema.safeParse(professionalsResult.data);
+      content = (
+        <div className="stack">
+          <div className="company-profile-media">
+            <MediaUploader
+              kind="logo"
+              label="Logo da empresa"
+              currentPath={business.logo_path}
+            />
+            <MediaUploader
+              kind="cover"
+              label="Foto de capa"
+              currentPath={business.cover_path}
+            />
+          </div>
+          <CompanyProfileForm business={business} />
+          {professionals?.success ? (
+            <CompanyProfessionals
+              professionals={professionals.data as CompanyProfessional[]}
+            />
+          ) : (
+            <LoadError label="os profissionais" />
+          )}
           {sharing ? (
             <BusinessShare
               key={sharing.url}
@@ -382,12 +455,94 @@ export default async function Company({
             />
           ) : (
             <p className="notice">
-              Seu link de agendamento está indisponível no momento. Tente
-              novamente.
+              Seu link está indisponível no momento. Tente novamente.
             </p>
           )}
-          {!needsSetup && settings}
-        </>
+        </div>
+      );
+    } else if (tab === "galeria") {
+      const result = await db
+        .from("business_gallery")
+        .select("id,storage_path,position")
+        .eq("business_id", business.id)
+        .order("position")
+        .limit(12);
+      const gallery = result.error
+        ? null
+        : gallerySchema.safeParse(result.data);
+      content = gallery?.success ? (
+        <GalleryManager images={gallery.data} />
+      ) : (
+        <LoadError label="a galeria" />
+      );
+    } else if (tab === "configuracoes") {
+      const result = await db
+        .from("business_hours")
+        .select("business_id,weekday,start_time,end_time")
+        .eq("business_id", business.id)
+        .order("weekday");
+      content = (
+        <div className="stack">
+          <section className="stack">
+            <h2>Horários de atendimento</h2>
+            {result.error ? (
+              <LoadError label="os horários" />
+            ) : (
+              <CompanyHoursForm
+                hours={(result.data || []) as BusinessHours[]}
+              />
+            )}
+          </section>
+          <section className="stack">
+            <h2>Empresa e acesso</h2>
+            <div className="inline">
+              <Link
+                className="button button-secondary"
+                href="/empresa?tab=perfil"
+                prefetch={false}
+              >
+                Editar perfil da empresa
+              </Link>
+              <Link
+                className="button button-secondary"
+                href="/planos"
+                prefetch={false}
+              >
+                Plano e assinatura
+              </Link>
+              <Link href="/cliente?tab=configuracoes" prefetch={false}>
+                Segurança da minha conta
+              </Link>
+            </div>
+          </section>
+        </div>
+      );
+    }
+  }
+  return (
+    <AppShell active="empresa" workspace="empresa" activeTab={tab}>
+      <div className="page-intro inline between">
+        <div>
+          <span className="eyebrow">{business?.name || "Minha empresa"}</span>
+          <h1>{business ? tabLabels[tab] : "Crie sua empresa"}</h1>
+        </div>
+        {business && (
+          <Link
+            className="button button-secondary"
+            href={`/agendar/${business.slug}`}
+            prefetch={false}
+          >
+            Ver perfil público
+          </Link>
+        )}
+      </div>
+      <Notices params={params} />
+      {error ? (
+        <LoadError label="sua empresa" />
+      ) : business ? (
+        content
+      ) : (
+        <CompanyCreationForm />
       )}
     </AppShell>
   );

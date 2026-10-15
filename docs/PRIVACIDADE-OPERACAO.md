@@ -1,6 +1,6 @@
 # Operação de privacidade do NuvemMeet
 
-Responsável informado: Richard. Contato: richardsamiaventura@gmail.com. O envio de e-mails está configurado. Atendimento dos direitos, retenção, contratos, backups e segurança administrativa continuam responsabilidades operacionais do responsável. O código não certifica conformidade integral com a LGPD.
+Responsável informado: Richard. Contato: richardsamiaventura@gmail.com. O envio de e-mails está configurado. Atendimento dos direitos, retenção, contratos, backups e segurança administrativa continuam responsabilidades operacionais do responsável. O código não certifica conformidade integral com a LGPD. O cadastro público está habilitado desde a autorização de lançamento nesta sessão; isso não resolve automaticamente as pendências operacionais descritas abaixo.
 
 ## Rotina do responsável
 
@@ -8,7 +8,7 @@ Todos os dias úteis, abra `privacy_requests` no painel Supabase com sua conta a
 
 Confirme a identidade com a sessão/conta e o e-mail já cadastrado; não solicite cópias de documentos por padrão. A exportação autenticada do painel atende ao acesso básico. Pedidos completos de confirmação/acesso devem observar o prazo de até 15 dias do artigo 19 da LGPD. Outros direitos exigem análise aplicável, sem prazos fictícios ou garantias de exclusão instantânea.
 
-Para correção, o titular pode alterar o próprio nome para reservas futuras. Correções de histórico precisam ser verificadas administrativamente; preserve a integridade de registros necessários e a trilha de operação, limitando dados pessoais adicionais.
+Para correção, o titular pode alterar nome, usuário e telefone no próprio perfil, enviar/remover avatar, editar a própria avaliação e trocar e-mail/senha com reautenticação. E-mail novo só é concluído após as confirmações do Supabase Auth. Alterar o perfil vale para reservas futuras; avaliações guardam o nome público no momento da publicação/edição. Correções de histórico precisam ser verificadas administrativamente; preserve a integridade de registros necessários e a trilha de operação, limitando dados pessoais adicionais.
 
 ## Exclusão
 
@@ -17,6 +17,7 @@ Antes de processar, confira reservas futuras, a eventual empresa do titular e re
 - Para um cliente, avalie cancelamento das reservas futuras, anonimização do nome capturado nos agendamentos, remoção de comentários pessoais e dissociação dos identificadores da auditoria. Excluir somente o usuário no Auth **não** remove os nomes capturados em reservas antigas.
 - Para o proprietário de uma empresa, resolva primeiro os atendimentos e a destinação da empresa/histórico. O banco impede apagar a conta que ainda é proprietária de uma empresa e impede apagar empresas/serviços com reservas. Não desative esses controles para fazer uma exclusão passar.
 - Para um assinante, confirme o estado das cobranças Pix e trate o ledger financeiro antes de remover a conta ou empresa. As chaves estrangeiras financeiras impedem a remoção direta. Não desative esses controles e não exclua uma cobrança pendente/ambígua para tentar gerar outra. Registros financeiros necessários exigem retenção/anonimização documentada conforme as obrigações aplicáveis.
+- Trate avaliações, favoritos e mídia do titular: remova avaliações quando aplicável (inclusive o primeiro nome/usuário capturado), favoritos e avatar privado. Fotos públicas da empresa/equipe precisam de destinação autorizada. Apague os arquivos pelo Storage API, depois de desfazer os vínculos no banco; apagar somente a referência SQL não remove o arquivo. Limite-se a caminhos e UUIDs verificados e considere caches públicos existentes.
 - Apague a conta pelo Supabase Auth somente quando as relações e dados aplicáveis tiverem sido tratados. Revogue o acesso e confira que perfil, registros pessoais e associações indevidas não permaneceram. Limite qualquer procedimento aos IDs do titular confirmado.
 - Documente a justificativa e o prazo de uma retenção legal excepcional e responda ao titular. Proteja também os registros administrativos; não copie senhas, tokens ou documentos desnecessários para observações.
 

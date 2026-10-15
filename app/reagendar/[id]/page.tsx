@@ -8,6 +8,7 @@ import { changeAppointment } from "@/lib/actions";
 import { dateTime, localDate } from "@/lib/types";
 import { AppShell } from "@/components/app-shell";
 import { SlotPicker, Slot } from "@/components/slot-picker";
+import { FormSubmit } from "@/components/form-submit";
 
 export default async function Reschedule({
   params,
@@ -27,16 +28,30 @@ export default async function Reschedule({
   if (!z.uuid().safeParse(id).success) notFound();
   const { data: a } = await db
     .from("appointments")
-    .select("*")
+    .select("business_id,service_id,service_name,customer_id,starts_at,status")
     .eq("id", id)
     .maybeSingle();
   if (!a) notFound();
-  const { data: b } = await db
-    .from("business_catalog")
-    .select("*")
-    .eq("id", a.business_id)
-    .single();
-  if (!b) notFound();
+  const [{ data: b }, owner] = await Promise.all([
+    db
+      .from("business_catalog")
+      .select("name,timezone")
+      .eq("id", a.business_id)
+      .single(),
+    query.from === "empresa" || a.customer_id !== user.id
+      ? db
+          .from("businesses")
+          .select("id")
+          .eq("id", a.business_id)
+          .eq("owner_id", user.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  if (!b || (a.customer_id !== user.id && !owner.data)) notFound();
+  // The requested navigation context cannot turn a customer into the host.
+  const host = Boolean(owner.data);
+  const workspace = host ? "empresa" : "cliente";
+  const back = host ? "/empresa?tab=agenda" : "/cliente?tab=agendamentos";
   const today = localDate(b.timezone);
   const date = z.iso.date().safeParse(query.date).success ? query.date! : today;
   const max = new Date(`${today}T12:00:00Z`);
@@ -46,9 +61,12 @@ export default async function Reschedule({
     p_service_id: a.service_id,
     p_date: date,
   });
-  const back = query.from === "empresa" ? "/empresa" : "/cliente";
   return (
-    <AppShell active={query.from === "empresa" ? "empresa" : "cliente"}>
+    <AppShell
+      active={workspace}
+      workspace={workspace}
+      activeTab={host ? "agenda" : "agendamentos"}
+    >
       <div className="page-intro">
         <span className="eyebrow">Um novo horário</span>
         <h1>Reagendar {a.service_name}</h1>
@@ -61,7 +79,7 @@ export default async function Reschedule({
       ) : (
         <div className="grid-2">
           <form className="card stack" method="get">
-            <input type="hidden" name="from" value={query.from || ""} />
+            <input type="hidden" name="from" value={workspace} />
             <label className="field">
               Nova data
               <input
@@ -97,16 +115,15 @@ export default async function Reschedule({
               atual do serviço. Ao trocar o horário, a reserva volta a aguardar
               confirmação.
             </p>
-            <button
-              className="button"
-              disabled={Boolean(error) || !slots?.length}
-            >
+            <FormSubmit disabled={Boolean(error) || !slots?.length}>
               Salvar novo horário
-            </button>
+            </FormSubmit>
           </form>
         </div>
       )}
-      <Link href={back}>Voltar para minha agenda</Link>
+      <Link href={back} prefetch={false}>
+        Voltar para minha agenda
+      </Link>
     </AppShell>
   );
 }

@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./workspace.css";
+import "@/components/notifications.css";
+import { NotificationProvider } from "@/components/notifications";
 
 export const metadata: Metadata = {
   title: {
@@ -19,7 +22,7 @@ export default function RootLayout({
         <a className="skip-link" href="#main">
           Pular para o conteúdo
         </a>
-        {children}
+        <NotificationProvider>{children}</NotificationProvider>
       </body>
     </html>
   );

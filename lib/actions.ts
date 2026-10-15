@@ -5,20 +5,26 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { supabase, isConfigured, isRegistrationOpen } from "./supabase";
 import { hasBusinessSubscription } from "./subscription";
+import { safeAuthDestination } from "./auth-navigation";
+import { signInInput, signUpInput } from "./auth-input";
+import { clearRecoveryGrant, hasRecoveryGrantForAuthenticatedUser } from "./auth-recovery";
 
-function feedback(path: string, message: string, error = false): never {
+function feedback(path: string, message: string, error = false, options?: { type?: "success" | "info" | "warning"; title?: string }): never {
   revalidatePath(path.split("?")[0]);
+  const query = new URLSearchParams({ [error ? "error" : "notice"]: message, notice_id: crypto.randomUUID() });
+  if (!error && options?.type) query.set("notice_type", options.type);
+  if (options?.title) query.set("notice_title", options.title);
   redirect(
-    `${path}${path.includes("?") ? "&" : "?"}${error ? "error" : "notice"}=${encodeURIComponent(message)}`,
+    `${path}${path.includes("?") ? "&" : "?"}${query}`,
   );
 }
 function destination(value: FormDataEntryValue | null) {
-  const path = String(value || "/cliente");
-  return path === "/empresa" ||
-    path === "/planos" ||
-    /^\/agendar\/[a-z0-9-]+$/.test(path)
-    ? path
-    : "/cliente";
+  return safeAuthDestination(value);
+}
+function authFormPath(form: FormData, section?: "signup" | "recovery") {
+  const query = new URLSearchParams({ next: destination(form.get("next")) });
+  if (section) query.set("form", section);
+  return `/entrar?${query}`;
 }
 async function authenticated() {
   if (!isConfigured()) redirect("/entrar");
@@ -35,79 +41,74 @@ async function subscribed() {
   return result;
 }
 export async function signIn(form: FormData) {
+  const path = authFormPath(form);
   if (!isConfigured())
-    feedback("/entrar", "Configure a conexão com Supabase para entrar.", true);
-  const email = z.email().safeParse(form.get("email"));
-  if (!email.success) feedback("/entrar", "Informe um e-mail válido.", true);
+    feedback(path, "O acesso está temporariamente indisponível.", true);
+  const input = signInInput(form);
+  if (!input.success) feedback(path, "Informe um e-mail válido e sua senha.", true);
   const db = await supabase();
-  const { error } = await db.auth.signInWithPassword({
-    email: email.data,
-    password: String(form.get("password") || ""),
-  });
-  if (error)
+  // Catch only the provider request, never Next's redirect exception.
+  const result = await db.auth.signInWithPassword(input.data).catch(() => null);
+  if (!result || result.error)
     feedback(
-      "/entrar",
+      path,
       "Não foi possível entrar. Confira os dados e a confirmação do e-mail.",
       true,
     );
+  await clearRecoveryGrant();
   redirect(destination(form.get("next")));
 }
 export async function signUp(form: FormData) {
+  const path = authFormPath(form, "signup");
   if (!isRegistrationOpen())
     feedback(
-      "/entrar",
+      path,
       "O cadastro está temporariamente indisponível. Tente novamente em breve.",
       true,
     );
   if (!isConfigured())
     feedback(
-      "/entrar",
-      "Configure a conexão com Supabase para criar sua conta.",
+      path,
+      "O cadastro está temporariamente indisponível.",
       true,
     );
-  const input = z
-    .object({
-      name: z.string().trim().min(2).max(80),
-      email: z.email().max(254),
-      password: z.string().min(12).max(128),
-    })
-    .safeParse(Object.fromEntries(form));
-  if (!input.success || form.get("privacy") !== "on")
-    feedback(
-      "/entrar",
-      "Informe nome, e-mail, senha com 12 caracteres e confirme a leitura da privacidade.",
-      true,
-    );
+  const input = signUpInput(form);
+  if (!input.success) feedback(path, input.message, true);
   const db = await supabase();
   const next = destination(form.get("next"));
   const origin = process.env.NEXT_PUBLIC_SITE_URL;
   if (!origin)
     feedback(
-      "/entrar",
+      path,
       "A URL de confirmação precisa ser configurada pelo responsável.",
       true,
     );
-  const { error, data } = await db.auth.signUp({
+  const result = await db.auth.signUp({
     email: input.data.email,
     password: input.data.password,
     options: {
       data: { display_name: input.data.name },
       emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
     },
-  });
-  if (error)
+  }).catch(() => null);
+  if (!result || result.error)
     feedback(
-      "/entrar",
+      path,
       "Não foi possível criar a conta. Tente novamente mais tarde ou recupere seu acesso.",
       true,
     );
-  if (data.session) redirect(next);
+  if (result.data.session) redirect(next);
+  // Existing confirmed emails receive an obfuscated provider success too.
+  // Use identical feedback so signup cannot enumerate other people's accounts.
   feedback(
-    "/entrar",
-    "Se o cadastro for novo, confira seu e-mail para confirmar. Já tem conta? Use Entrar ou recupere sua senha.",
+    path,
+    "Se este e-mail ainda não tiver conta, verifique sua caixa de entrada e o spam para confirmar o cadastro. Já tem conta? Entre ou recupere sua senha.",
+    false,
+    { type: "success", title: "Cadastro recebido" },
   );
 }
 export async function signOut() {
+  await clearRecoveryGrant();
   if (isConfigured()) {
     const db = await supabase();
     await db.auth.signOut();
@@ -115,30 +116,37 @@ export async function signOut() {
   redirect("/");
 }
 export async function sendReset(form: FormData) {
-  const email = z.email().safeParse(form.get("email"));
-  if (!isConfigured() || !email.success || !process.env.NEXT_PUBLIC_SITE_URL)
-    feedback("/entrar", "Confira o e-mail e a configuração de acesso.", true);
+  const path = authFormPath(form, "recovery");
+  const email = z.string().trim().max(254).pipe(z.email()).safeParse(form.get("email"));
+  if (!isConfigured() || form.getAll("email").length !== 1 || !email.success || !process.env.NEXT_PUBLIC_SITE_URL)
+    feedback(path, "Confira o e-mail ou tente novamente em instantes.", true);
   const db = await supabase();
-  await db.auth.resetPasswordForEmail(email.data, {
+  const result = await db.auth.resetPasswordForEmail(email.data, {
     redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/recuperar`,
-  });
+  }).catch(() => null);
+  if (!result || result.error) feedback(path, "Não foi possível solicitar a recuperação agora. Tente novamente mais tarde.", true);
   feedback(
-    "/entrar",
+    path,
     "Se houver uma conta com esse e-mail, você receberá as instruções de recuperação.",
+    false,
+    { type: "info", title: "Confira seu e-mail" },
   );
 }
 export async function resetPassword(form: FormData) {
-  const { db } = await authenticated();
+  const { db, user } = await authenticated();
+  if (!(await hasRecoveryGrantForAuthenticatedUser(db, user.id)))
+    feedback("/entrar?form=recovery&next=%2Frecuperar", "Solicite um novo link de recuperação para definir outra senha.", true);
   const password = z.string().min(12).max(128).safeParse(form.get("password"));
   if (!password.success)
     feedback("/recuperar", "Use uma senha com pelo menos 12 caracteres.", true);
-  const { error } = await db.auth.updateUser({ password: password.data });
-  if (error)
+  const result = await db.auth.updateUser({ password: password.data }).catch(() => null);
+  if (!result || result.error)
     feedback(
       "/recuperar",
       "Não foi possível atualizar sua senha. Solicite um novo link.",
       true,
     );
+  await clearRecoveryGrant();
   feedback("/cliente", "Senha atualizada.");
 }
 export async function saveBusiness(form: FormData) {
@@ -232,7 +240,7 @@ export async function saveService(form: FormData) {
     .safeParse(Object.fromEntries(form));
   if (!input.success)
     feedback(
-      "/empresa",
+      "/empresa?tab=servicos",
       "Confira serviço, duração (múltiplo de 15 minutos) e preço.",
       true,
     );
@@ -241,7 +249,7 @@ export async function saveService(form: FormData) {
     .select("id")
     .eq("owner_id", user.id)
     .single();
-  if (!business) feedback("/empresa", "Cadastre sua empresa primeiro.", true);
+  if (!business) feedback("/empresa?tab=servicos", "Cadastre sua empresa primeiro.", true);
   const { price, ...values } = input.data;
   const payload = {
     ...values,
@@ -249,18 +257,24 @@ export async function saveService(form: FormData) {
     active: form.get("active") === "on",
   };
   const id = form.get("service_id");
+  if (id && !z.uuid().safeParse(id).success)
+    feedback("/empresa?tab=servicos", "Selecione um serviço válido.", true);
   const result = id
     ? await db
         .from("services")
         .update(payload)
         .eq("id", String(id))
         .eq("business_id", business.id)
+        .select("id")
+        .maybeSingle()
     : await db
         .from("services")
-        .insert({ ...payload, business_id: business.id });
-  if (result.error)
-    feedback("/empresa", "Não foi possível salvar o serviço.", true);
-  feedback("/empresa", "Serviço salvo.");
+        .insert({ ...payload, business_id: business.id })
+        .select("id")
+        .single();
+  if (result.error || !result.data)
+    feedback("/empresa?tab=servicos", "Não foi possível salvar o serviço.", true);
+  feedback("/empresa?tab=servicos", "Serviço salvo.");
 }
 export async function saveHours(form: FormData) {
   const { db } = await subscribed();
@@ -277,7 +291,7 @@ export async function saveHours(form: FormData) {
       start >= end
     )
       feedback(
-        "/empresa",
+        "/empresa?tab=configuracoes",
         "Use horários em intervalos de 15 minutos, com início anterior ao fim.",
         true,
       );
@@ -290,12 +304,12 @@ export async function saveHours(form: FormData) {
   const { error } = await db.rpc("save_business_hours", { p_hours: rows });
   if (error)
     feedback(
-      "/empresa",
+      "/empresa?tab=configuracoes",
       "Não foi possível salvar a disponibilidade. Nenhuma alteração parcial foi aplicada.",
       true,
     );
   feedback(
-    "/empresa",
+    "/empresa?tab=configuracoes",
     "Disponibilidade atualizada. Agendamentos existentes foram preservados.",
   );
 }
@@ -326,7 +340,12 @@ export async function bookAppointment(form: FormData) {
 }
 export async function changeAppointment(form: FormData) {
   const { db } = await authenticated();
-  const path = form.get("return_to") === "/empresa" ? "/empresa" : "/cliente";
+  // Navigation does not grant host permissions; update_appointment checks those
+  // against the current session. Accept only the two agenda destinations.
+  const proposed = form.get("return_to");
+  const path = proposed === "/empresa" || proposed === "/empresa?tab=agenda"
+    ? "/empresa?tab=agenda"
+    : "/cliente?tab=agendamentos";
   const input = z
     .object({
       appointment_id: z.uuid(),

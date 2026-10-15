@@ -75,6 +75,14 @@ async function main() {
     $$;
     grant usage on schema auth, public to anon, authenticated, service_role;
     grant execute on function auth.uid() to anon, authenticated, service_role;
+    -- Storage mock only in the disposable database guarded above.
+    create schema storage;
+    create table storage.buckets(id text primary key,name text not null,public boolean not null default false,file_size_limit bigint,allowed_mime_types text[]);
+    create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text not null references storage.buckets(id),name text not null,metadata jsonb,unique(bucket_id,name));
+    alter table storage.objects enable row level security;
+    grant usage on schema storage to anon,authenticated,service_role;
+    grant select,insert,update,delete on storage.objects to authenticated;
+    grant select on storage.buckets to anon,authenticated;
   `);
   check((await admin.query("select count(*)::int as count from pg_roles where rolname in ('anon','authenticated') and (rolsuper or rolbypassrls)")).rows[0].count === 0, 'Test roles cannot bypass RLS');
   const existingUsers = ['20000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000002'];
@@ -323,7 +331,8 @@ async function main() {
   await rejects(ids.hostA,"insert into public.audit_events(appointment_id,action) values ($1,'forged')",[aliceBooking.id],['42501'],'Host cannot forge audit events');
   check((await admin.query("select count(*)::int as count from pg_tables where schemaname='public' and not rowsecurity")).rows[0].count===0,'Every application table enables RLS');
   await require('./billing-analytics.cjs')({admin,as,rejects,check,equal,Client,connectionString,ids,businesses,services,dates});
-  console.log(`PASS: ${assertions} assertions on real PostgreSQL; tenant isolation, trusted snapshots, races, lifecycle, privacy, Pix entitlements and real analytics.`);
+  await require('./profiles-reviews.cjs')({admin,as,rejects,check,equal,Client,connectionString,ids,businesses,services});
+  console.log(`PASS: ${assertions} assertions on real PostgreSQL; tenant isolation, races, lifecycle, privacy, Pix, analytics, reviews and images.`);
 }
 
 main().catch(error => { console.error(`FAIL: ${error.stack}`); process.exitCode=1; }).finally(()=>admin.end());

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { changeAppointment } from "@/lib/actions";
+import { safeAuthDestination } from "@/lib/auth-navigation";
 import { Appointment, dateTime, money } from "@/lib/types";
+import { FormSubmit } from "@/components/form-submit";
 
 const statusNames = {
   pending: "Aguardando confirmação",
@@ -12,23 +14,21 @@ function Action({
   appointment,
   action,
   label,
-  host,
+  returnTo,
 }: {
   appointment: Appointment;
   action: string;
   label: string;
-  host: boolean;
+  returnTo: string;
 }) {
   return (
     <form action={changeAppointment}>
       <input type="hidden" name="appointment_id" value={appointment.id} />
       <input type="hidden" name="action" value={action} />
-      <input
-        type="hidden"
-        name="return_to"
-        value={host ? "/empresa" : "/cliente"}
-      />
-      <button className="button button-secondary">{label}</button>
+      <input type="hidden" name="return_to" value={returnTo} />
+      <FormSubmit secondary pendingLabel="Atualizando…">
+        {label}
+      </FormSubmit>
     </form>
   );
 }
@@ -36,14 +36,20 @@ export function Appointments({
   items,
   host = false,
   timezone = "America/Sao_Paulo",
+  returnTo,
 }: {
   items: Appointment[];
   host?: boolean;
   timezone?: string;
+  returnTo?: string;
 }) {
+  const actionDestination = safeAuthDestination(
+    returnTo,
+    host ? "/empresa?tab=agenda" : "/cliente?tab=agendamentos",
+  );
   if (!items.length)
     return (
-      <div className="card empty-state">
+      <div className="empty-state compact-empty">
         <h3>Sua agenda começa no próximo encontro.</h3>
         <p className="muted">
           Os agendamentos aparecerão aqui assim que forem feitos.
@@ -76,7 +82,7 @@ export function Appointments({
                 appointment={a}
                 action="confirm"
                 label="Confirmar"
-                host={host}
+                returnTo={actionDestination}
               />
             )}{" "}
             {host &&
@@ -86,7 +92,7 @@ export function Appointments({
                   appointment={a}
                   action="complete"
                   label="Marcar concluído"
-                  host={host}
+                  returnTo={actionDestination}
                 />
               )}{" "}
             {["pending", "confirmed"].includes(a.status) &&
@@ -95,6 +101,7 @@ export function Appointments({
                   <Link
                     className="button button-secondary"
                     href={`/reagendar/${a.id}${host ? "?from=empresa" : ""}`}
+                    prefetch={false}
                   >
                     Reagendar
                   </Link>
@@ -102,7 +109,7 @@ export function Appointments({
                     appointment={a}
                     action="cancel"
                     label="Cancelar"
-                    host={host}
+                    returnTo={actionDestination}
                   />
                 </>
               )}
@@ -113,7 +120,11 @@ export function Appointments({
               <form className="stack" action={changeAppointment}>
                 <input type="hidden" name="appointment_id" value={a.id} />
                 <input type="hidden" name="action" value="comment" />
-                <input type="hidden" name="return_to" value="/empresa" />
+                <input
+                  type="hidden"
+                  name="return_to"
+                  value={actionDestination}
+                />
                 <label className="field">
                   Mensagem visível ao cliente
                   <textarea
@@ -126,9 +137,7 @@ export function Appointments({
                     necessárias ao atendimento.
                   </small>
                 </label>
-                <button className="button button-secondary">
-                  Salvar comentário
-                </button>
+                <FormSubmit secondary>Salvar comentário</FormSubmit>
               </form>
             </details>
           )}

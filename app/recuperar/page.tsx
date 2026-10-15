@@ -3,6 +3,7 @@ export const metadata: Metadata = { title: "Recuperar senha" };
 import { redirect } from "next/navigation";
 import { isConfigured, supabase } from "@/lib/supabase";
 import { resetPassword } from "@/lib/actions";
+import { hasRecoveryGrantForAuthenticatedUser } from "@/lib/auth-recovery";
 import { Notices } from "@/components/notices";
 import Link from "next/link";
 import { Logo } from "@/components/ui";
@@ -17,6 +18,8 @@ export default async function Recover({
     data: { user },
   } = await db.auth.getUser();
   if (!user) redirect("/entrar");
+  if (!(await hasRecoveryGrantForAuthenticatedUser(db, user.id)))
+    redirect("/entrar?form=recovery&next=%2Frecuperar&error=Solicite+um+novo+link+de+recupera%C3%A7%C3%A3o+para+definir+outra+senha.");
   return (
     <main id="main" className="container auth-shell stack">
       <Link className="brand-link" href="/" aria-label="NuvemMeet, início">

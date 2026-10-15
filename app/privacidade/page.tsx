@@ -24,8 +24,11 @@ export default function Privacy() {
         </p>
         <p>
           Registramos serviço, valor, horário, status e comentários sobre a
-          reserva. Não solicitamos CPF, endereço, informações de saúde ou dados
-          de cartão. Não inclua dados sensíveis nos campos de texto.
+          reserva. Você também pode salvar empresas favoritas e preencher
+          usuário, telefone e foto de perfil opcionais; esses dados do perfil
+          ficam disponíveis somente para você e para a administração do serviço.
+          Não solicitamos CPF, endereço residencial de clientes, informações de
+          saúde ou dados de cartão. Não inclua dados sensíveis nos campos de texto.
         </p>
         <p>
           Para empresas assinantes, registramos o estado da assinatura, período
@@ -34,6 +37,12 @@ export default function Privacy() {
           pagamento Pix. Não coletamos ou armazenamos dados de cartão. A conta
           de cliente é gratuita; valores de serviços agendados não são cobrados
           pelo NuvemMeet.
+        </p>
+        <p>
+          Avaliações são opcionais e exigem um atendimento concluído. A nota, o
+          comentário e seu usuário ou primeiro nome ficam públicos no perfil da
+          empresa. Você pode editar ou excluir sua própria avaliação no painel.
+          Não inclua dados pessoais de terceiros no comentário.
         </p>
       </section>
       <section className="card stack">
@@ -44,6 +53,13 @@ export default function Privacy() {
           e-mail, seu perfil ou reservas de outras empresas. O responsável pelo
           NuvemMeet tem acesso administrativo para operar o serviço e atender
           solicitações de privacidade.
+        </p>
+        <p>
+          Logo, capa, galeria, profissionais e contatos que a empresa publica
+          aparecem na busca e na página de agendamento. As fotos da empresa são
+          públicas; a foto da sua conta é privada. O envio de imagens remove
+          metadados como localização e informações da câmera. A remoção de uma
+          imagem pública pode levar tempo para aparecer em caches já existentes.
         </p>
         <p>
           Supabase hospeda o banco e a autenticação nos Estados Unidos, na

@@ -5,6 +5,17 @@ export type Business = {
   slug: string;
   description: string;
   timezone: string;
+  category?: string | null;
+  city?: string | null;
+  state?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  whatsapp?: string | null;
+  instagram?: string | null;
+  logo_path?: string | null;
+  cover_path?: string | null;
+  rating_average?: number | null;
+  rating_count?: number;
 };
 export type Service = {
   id: string;

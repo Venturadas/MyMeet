@@ -4,17 +4,19 @@ import { Logo } from "@/components/ui";
 import { signIn, signUp, sendReset } from "@/lib/actions";
 import { isConfigured, isRegistrationOpen } from "@/lib/supabase";
 import { Notices } from "@/components/notices";
+import { safeAuthDestination } from "@/lib/auth-navigation";
 
 export const metadata: Metadata = { title: "Entrar" };
 
 export default async function SignIn({
   searchParams,
 }: {
-  searchParams: Promise<{ notice?: string; error?: string; next?: string }>;
+  searchParams: Promise<{ notice?: string; error?: string; next?: string | string[]; form?: string }>;
 }) {
   const params = await searchParams;
   const configured = isConfigured();
   const registrationOpen = isRegistrationOpen();
+  const next = safeAuthDestination(params.next);
 
   return (
     <main id="main" className="container auth-shell stack">
@@ -30,7 +32,7 @@ export default async function SignIn({
         <p className="notice">O acesso está temporariamente indisponível.</p>
       )}
       <form className="stack" action={signIn} aria-label="Entrar na conta">
-        <input type="hidden" name="next" value={params.next || ""} />
+        <input type="hidden" name="next" value={next} />
         <label className="field">
           E-mail
           <input
@@ -55,9 +57,10 @@ export default async function SignIn({
           Entrar
         </button>
       </form>
-      <details className="auth-details">
+      <details className="auth-details" open={params.form === "recovery"}>
         <summary>Esqueci minha senha</summary>
         <form className="stack" action={sendReset}>
+          <input type="hidden" name="next" value={next} />
           <label className="field">
             E-mail da conta
             <input
@@ -73,7 +76,7 @@ export default async function SignIn({
           </button>
         </form>
       </details>
-      <details className="auth-details">
+      <details className="auth-details" open={params.form === "signup"}>
         <summary>Crie sua conta grátis</summary>
         {!registrationOpen && (
           <p className="notice">
@@ -81,7 +84,7 @@ export default async function SignIn({
           </p>
         )}
         <form className="stack" action={signUp}>
-          <input type="hidden" name="next" value={params.next || ""} />
+          <input type="hidden" name="next" value={next} />
           <label className="field">
             Seu nome
             <input
