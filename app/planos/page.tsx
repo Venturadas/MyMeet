@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { z } from "zod";
 import { AppShell } from "@/components/app-shell";
 import { Notices } from "@/components/notices";
 import { PixCheckout } from "@/components/pix-checkout";
@@ -17,6 +18,12 @@ export default async function Plans({
   searchParams: Promise<{ error?: string; notice?: string }>;
 }) {
   const params = await searchParams;
+  const supportContact = z
+    .string()
+    .trim()
+    .max(254)
+    .pipe(z.email())
+    .safeParse(process.env.NEXT_PUBLIC_PRIVACY_CONTACT);
   const db = isConfigured() ? await supabase() : null;
   const user = db ? (await db.auth.getUser()).data.user : null;
   const active = db && user ? await hasBusinessSubscription(db) : false;
@@ -58,6 +65,7 @@ export default async function Plans({
               active,
               expiresAt: subscription?.current_period_end ?? null,
             }}
+            supportEmail={supportContact.success ? supportContact.data : null}
           />
         ) : (
           <Link className="button" href="/entrar?next=/planos">

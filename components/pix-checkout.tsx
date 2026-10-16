@@ -58,9 +58,11 @@ function paymentResponse(value: unknown): Checkout | null {
 export function PixCheckout({
   configured,
   initialSubscription,
+  supportEmail = null,
 }: {
   configured: boolean;
   initialSubscription: Subscription;
+  supportEmail?: string | null;
 }) {
   const [checkout, setCheckout] = useState<Checkout>({
     payment: null,
@@ -351,6 +353,17 @@ export function PixCheckout({
         >
           {busy === "checking" ? "Verificando…" : "Verificar pagamento"}
         </button>
+      )}
+      {error && !needsLogin && (
+        <p className="muted">
+          Se você já pagou, verifique o pagamento antes de tentar outro Pix.
+          {supportEmail && (
+            <>
+              {" "}Se precisar de ajuda,{" "}
+              <a href={`mailto:${supportEmail}`}>fale com o suporte</a>.
+            </>
+          )}
+        </p>
       )}
       <p className="muted" role="status" aria-live="polite">
         {copyMessage}
