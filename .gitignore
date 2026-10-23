@@ -7,3 +7,8 @@ next-env.d.ts
 playwright-report/
 test-results/
 .vercel/
+
+# Encrypted database archives belong outside the checkout.
+*.nuvlink
+.nuvlink-backups/
+supabase/.temp/

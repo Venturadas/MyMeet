@@ -4,14 +4,15 @@ import {
   processMercadoPagoNotification,
 } from "@/lib/billing";
 import { verifyMercadoPagoSignature } from "@/lib/billing-policy";
+import { operationalFailure } from "@/lib/operations";
 
 export const runtime = "nodejs";
 const MAX_BODY_BYTES = 16_384;
 
-function response(status: number) {
+function response(status: number, requestId?: string) {
   return new NextResponse(null, {
     status,
-    headers: { "Cache-Control": "no-store" },
+    headers: { "Cache-Control": "no-store", ...(requestId ? { "X-Request-ID": requestId } : {}) },
   });
 }
 
@@ -79,6 +80,6 @@ export async function POST(request: Request) {
     return response(200);
   } catch {
     // Retryable response; never log webhook body, payer data or secret-bearing URLs.
-    return response(503);
+    return response(503, operationalFailure("billing.webhook_failed"));
   }
 }

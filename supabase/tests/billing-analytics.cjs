@@ -107,6 +107,19 @@ module.exports = async function billingAnalytics(t) {
   // cancellation/fulfilment RPCs keep their established authorization.
   await admin.query("update public.business_subscriptions set current_period_end=now()-interval '1 second' where user_id=$1",[ids.hostA]);
   equal((await as(ids.hostA,'select * from public.businesses')).rowCount,0,'Expired company panel cannot read its private company table');
+  const context = (await as(ids.hostA,'select public.get_my_business_agenda_context() as data')).rows[0].data;
+  equal(Object.keys(context).sort(), ['id','name','timezone'], 'Expired agenda context exposes only three necessary fields');
+  equal(context.id, businesses.A, 'Expired owner can resolve only its existing agenda');
+  equal((await as(ids.hostB,'select public.get_my_business_agenda_context() as data')).rows[0].data.id, businesses.B, 'Another owner cannot resolve the expired company context');
+  equal((await as(ids.alice,'select public.get_my_business_agenda_context() as data')).rows[0].data, null, 'Customer gets no company context');
+  await rejects(null,'select public.get_my_business_agenda_context()',[],['42501'],'Anonymous cannot execute agenda context');
+  await admin.query('begin');
+  try {
+    await admin.query('set local role authenticated');
+    await admin.query("select set_config('request.jwt.claim.sub','',true)");
+    try { await admin.query('select public.get_my_business_agenda_context()'); throw new Error('Missing identity must fail'); }
+    catch (error) { equal(error.code,'42501','Authenticated role without identity cannot resolve context'); }
+  } finally { await admin.query('rollback'); }
   check(!(await as(null,'select id from public.business_catalog')).rows.some(r=>r.id===businesses.A),'Expired company is hidden from public catalogue');
   equal((await as(null,'select * from public.services where business_id=$1',[businesses.A])).rowCount,0,'Expired company services are not exposed for new reservations');
   equal((await as(null,'select * from public.business_hours where business_id=$1',[businesses.A])).rowCount,0,'Expired company availability configuration is hidden');

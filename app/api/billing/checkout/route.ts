@@ -2,15 +2,17 @@ import { NextResponse } from "next/server";
 import { isConfigured, supabase } from "@/lib/supabase";
 import { billingIsConfigured, startBusinessPix } from "@/lib/billing";
 import { trustedBillingOrigin } from "@/lib/billing-policy";
+import { operationalFailure } from "@/lib/operations";
 
 export const runtime = "nodejs";
 
-function reply(value: unknown, status = 200) {
+function reply(value: unknown, status = 200, requestId?: string) {
   return NextResponse.json(value, {
     status,
     headers: {
       "Cache-Control": "private, no-store",
       "Referrer-Policy": "no-referrer",
+      ...(requestId ? { "X-Request-ID": requestId } : {}),
     },
   });
 }
@@ -67,7 +69,7 @@ export async function POST(request: Request) {
     return reply({ error: "Pagamento indisponível no momento." }, 503);
   try {
     return reply(await startBusinessPix({ id: user.id, email: user.email }));
-  } catch {
+  } catch (error) {
     // No raw provider responses, credentials, payment links or personal data in logs.
     return reply(
       {
@@ -75,6 +77,7 @@ export async function POST(request: Request) {
           "Não foi possível consultar o pagamento. Tente novamente em instantes.",
       },
       503,
+      operationalFailure("billing.checkout_failed", error),
     );
   }
 }

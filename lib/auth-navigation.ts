@@ -4,7 +4,8 @@ const businessTabs = new Set(["dashboard", "agenda", "servicos", "clientes", "av
 // Navigation state never grants permissions. Authentication only accepts these
 // known local destinations, including validated booking selections.
 export function safeAuthDestination(value: unknown, fallback = "/cliente") {
-  if (typeof value !== "string" || value.length > 500 || !value.startsWith("/") || value.startsWith("//") || value.includes("\\") || /[\u0000-\u001f\u007f]/.test(value)) return fallback;
+  if (typeof value !== "string" || value.length > 500 || !value.startsWith("/") || value.startsWith("//") || value.includes("\\") ||
+    [...value].some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)) return fallback;
   const url = new URL(value, "https://navigation.invalid");
   if (url.origin !== "https://navigation.invalid" || url.hash) return fallback;
   const keys = [...url.searchParams.keys()];

@@ -1,23 +1,76 @@
-name: Verificações do MVP
+name: Verificações do NuvLink
 on:
   push:
   pull_request:
 permissions:
   contents: read
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      # CI uses isolated fixtures; no production credentials or external base URL.
+      NEXT_PUBLIC_SUPABASE_URL: ''
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ''
+      PLAYWRIGHT_BASE_URL: ''
+      NUVEMMEET_REGISTRATION_OPEN: 'false'
+      MERCADO_PAGO_BILLING_ENABLED: 'false'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: npm
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm run build
-      - run: npx playwright install --with-deps chromium
-      - run: npm test
-      - run: npm ci --prefix supabase/tests
-      - run: npm run test:db
+          cache-dependency-path: |
+            package-lock.json
+            supabase/tests/package-lock.json
+      - name: Install locked application dependencies
+        run: npm ci
+      - name: Check production dependency advisories
+        run: npm audit --omit=dev --audit-level=high
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build production bundle
+        run: npm run build
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Browser and application regressions
+        run: npm test
+      - name: Install locked database test dependencies
+        run: npm ci --prefix supabase/tests
+      - name: Install PostgreSQL 17 backup clients
+        run: |
+          # pg_dump must support the disposable PostgreSQL 17 server.
+          # Use the official PGDG repository if this runner has no v17 clients.
+          if [[ ! -x /usr/lib/postgresql/17/bin/pg_dump || ! -x /usr/lib/postgresql/17/bin/pg_restore ]]; then
+            sudo apt-get update
+            sudo apt-get install --yes postgresql-common ca-certificates curl
+            sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+            sudo apt-get update
+            sudo apt-get install --yes postgresql-client-17
+          fi
+          /usr/lib/postgresql/17/bin/pg_dump --version
+          /usr/lib/postgresql/17/bin/pg_restore --version
+          echo 'PG_CLIENT_BIN=/usr/lib/postgresql/17/bin' >> "$GITHUB_ENV"
+      - name: Database security, concurrency and isolated backup restoration
+        run: npm run test:db
+      - name: Preserve failed offline browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: offline-browser-diagnostics-${{ github.run_id }}
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 5

@@ -153,6 +153,9 @@ export function PixCheckout({
     };
     visibility();
     document.addEventListener("visibilitychange", visibility);
+    // This is external revalidation. Initial busy/error state already matches load(),
+    // and the shared loader owns request deduplication, timeout and unmount cancellation.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (configured && !initialSubscription.active) void load("GET");
     return () => {
       mounted.current = false;

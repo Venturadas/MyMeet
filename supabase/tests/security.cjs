@@ -337,6 +337,7 @@ async function main() {
   check((await admin.query("select count(*)::int as count from pg_tables where schemaname='public' and not rowsecurity")).rows[0].count===0,'Every application table enables RLS');
   await require('./billing-analytics.cjs')({admin,as,rejects,check,equal,Client,connectionString,ids,businesses,services,dates});
   await require('./profiles-reviews.cjs')({admin,as,rejects,check,equal,Client,connectionString,ids,businesses,services});
+  await require('./backup-restore.cjs')({admin,as,check,equal,Client,connectionString,ids});
   console.log(`PASS: ${assertions} assertions on real PostgreSQL; tenant isolation, races, lifecycle, privacy, Pix, analytics, reviews and images.`);
 }
 

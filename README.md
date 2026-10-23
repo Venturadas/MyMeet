@@ -28,7 +28,7 @@ Mudanças de e-mail/senha nas configurações exigem a senha atual. A recuperaç
 
 ## Desenvolvimento
 
-Node.js 22+; validado com 24. Na raiz do checkout:
+Node.js 24, conforme `engines` e CI. Na raiz do checkout:
 
 ```sh
 npm ci
@@ -43,6 +43,8 @@ Sem configuração do banco, as rotas públicas indicam indisponibilidade e as a
 
 Em um banco novo e descartável, aplique `supabase/migrations/` em ordem de nome. No projeto hospedado atual, as quatro migrações existentes (estrutura, expediente atômico, assinaturas e `202610140001_profiles_reviews.sql`) já foram aplicadas e não devem ser reaplicadas. O histórico de migrações registrado pode estar vazio apesar de a estrutura existir; isso não autoriza reaplicar SQL. Verifique o esquema real e reconcilie o histórico antes de qualquer evolução. A migração de perfis acrescentou avaliações e mídia sem recriar contas ou conceder assinatura; a de assinaturas preservou dados sem liberar acesso pago automaticamente.
 
+A candidata de prontidão acrescenta `20261023175308_existing_appointment_access.sql`, ainda não aplicada em produção, para o contexto mínimo da própria agenda após expirar. Aplique somente essa evolução nova após revisão, antes do código que a utiliza; não reaplique a estrutura histórica.
+
 RLS protege contas/empresas/agendamentos. Assinaturas são consultáveis apenas pelo próprio usuário; o ledger financeiro é privado. Somente o backend privilegiado pode aplicar uma cobrança verificada. Intents persistentes, transações únicas, bloqueios e deduplicação impedem que retries acrescentem dias ou que o navegador marque um Pix como pago.
 
 Veja [docs/PAGAMENTOS.md](docs/PAGAMENTOS.md) para credenciais, assinatura do webhook, habilitação e validação real. Até configurar a conta recebedora e confirmar o fluxo no Mercado Pago, o botão de pagamento fica indisponível. A página de retorno ou um parâmetro na URL nunca libera acesso.
@@ -56,16 +58,20 @@ Use preset Next.js, Node.js 24, `npm ci` e `npm run build`. Defina a origem HTTP
 ## Verificação
 
 ```sh
-npm run build
+npm run lint
 npm run typecheck
+npm run build
+npm audit --omit=dev --audit-level=high
 npm test
 cd supabase/tests
 npm ci
 cd ../..
-npm run test:db
+PG_CLIENT_BIN=/caminho/para/postgresql/17/bin npm run test:db
 ```
 
 Playwright verifica navegação, marca, autenticação, busca, Pix, notificações e processamento seguro de imagens. A revisão conectada também verifica painéis e perfis em celulares, tablet e desktop. O runner SQL usa PostgreSQL descartável e cobre isolamento, concorrência, reservas, assinaturas, cobrança e análise. Fixtures existem somente nos testes; nenhuma é exibida como empresa ou atendimento real. Testes hospedados usam IDs isolados e removem exclusivamente seus próprios dados ao terminar. Não desative TLS para executar testes no ambiente com proxy.
+
+O workflow e seu isolamento estão em [docs/CI.md](docs/CI.md). Consulte [docs/OPERACAO-NUVLINK.md](docs/OPERACAO-NUVLINK.md) para preflight, saúde, alertas, implantação e rollback, e [docs/BACKUP-RESTAURACAO.md](docs/BACKUP-RESTAURACAO.md) para backup criptografado e restauração isolada. O parecer desta revisão está em [docs/PRONTIDAO-2026-10-23.md](docs/PRONTIDAO-2026-10-23.md).
 
 ## Operação e privacidade
 

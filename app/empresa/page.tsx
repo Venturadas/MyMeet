@@ -13,6 +13,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isConfigured, supabase } from "@/lib/supabase";
 import { hasBusinessSubscription } from "@/lib/subscription";
+import { companyAccessRedirect } from "@/lib/company-access";
 import type {
   Appointment,
   Business,
@@ -183,24 +184,27 @@ export default async function Company({
   } = await db.auth.getUser();
   if (!user)
     redirect(`/entrar?next=${encodeURIComponent(`/empresa?tab=${tab}`)}`);
-  if (!(await hasBusinessSubscription(db))) redirect("/planos");
+  const activeSubscription = await hasBusinessSubscription(db);
+  const accessRedirect = companyAccessRedirect(activeSubscription, tab);
+  if (accessRedirect) redirect(accessRedirect);
   const businessColumns =
     "id,owner_id,name,slug,description,timezone" +
     (tab === "perfil"
       ? ",category,city,state,address,phone,whatsapp,instagram,logo_path,cover_path"
       : "");
   const [{ data, error }, profile] = await Promise.all([
-    db
+    activeSubscription ? db
       .from("businesses")
       .select(businessColumns)
       .eq("owner_id", user.id)
-      .maybeSingle(),
+      .maybeSingle() : db.rpc("get_my_business_agenda_context"),
     db
       .from("profiles")
       .select("display_name,avatar_path")
       .eq("id", user.id)
       .single(),
   ]);
+  if (!activeSubscription && !data && !error) redirect("/planos");
   const business = data as Business | null;
   let content: React.ReactNode = null;
   if (business && !error) {
@@ -356,6 +360,7 @@ export default async function Company({
               <Appointments
                 items={(appointments.data || []) as Appointment[]}
                 host
+                allowReschedule={activeSubscription}
                 timezone={business.timezone}
                 returnTo="/empresa?tab=agenda"
               />
@@ -591,7 +596,7 @@ export default async function Company({
               : "Comece pelo nome. Você pode completar o perfil depois."
           }
           action={
-            business ? (
+            business && activeSubscription ? (
               <Link
                 className="button button-secondary"
                 href={`/agendar/${business.slug}`}
@@ -603,6 +608,7 @@ export default async function Company({
           }
         />
         <Notices params={params} />
+        {!activeSubscription && <p className="notice">Seu plano venceu. Os compromissos existentes continuam disponíveis para consulta, confirmação, cancelamento e conclusão. <Link href="/planos">Renovar plano</Link></p>}
         {error ? (
           <LoadError label="sua empresa" />
         ) : business ? (

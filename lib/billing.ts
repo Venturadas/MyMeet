@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { BUSINESS_PRICE_CENTS, BUSINESS_CURRENCY } from "./billing-plan";
+import { withRequestTimeout } from "./server-fetch";
 import {
   trustedBillingOrigin,
   providerDate,
@@ -39,6 +40,8 @@ function admin() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
+      global: { fetch: withRequestTimeout() },
+      db: { retry: false },
       auth: {
         persistSession: false,
         autoRefreshToken: false,
