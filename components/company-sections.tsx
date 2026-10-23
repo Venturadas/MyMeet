@@ -1,5 +1,23 @@
+import {
+  CalendarDays,
+  Clock3,
+  MessageSquare,
+  Star,
+  UsersRound,
+} from "lucide-react";
+import { EmptyState } from "@/components/ui";
 import { z } from "zod";
 import { dateTime } from "@/lib/types";
+
+function initials(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
+    .toLocaleUpperCase("pt-BR");
+}
 
 const count = z.number().int().nonnegative();
 const clientsSchema = z
@@ -63,14 +81,19 @@ export function CompanyClients({
 }) {
   if (!clients.length)
     return (
-      <p className="muted">
-        Seus clientes aparecerão aqui quando fizerem o primeiro agendamento.
-      </p>
+      <EmptyState
+        icon={<UsersRound size={22} aria-hidden="true" />}
+        title="Seus clientes aparecerão aqui"
+        description="Quando alguém fizer o primeiro agendamento, você poderá consultar o histórico nesta área."
+      />
     );
   return (
     <div className="company-list">
       {clients.map((client) => (
         <article className="company-client-row" key={client.client_key}>
+          <span className="business-initials" aria-hidden="true">
+            {initials(client.name)}
+          </span>
           <div>
             <h3>{client.name}</h3>
             <small className="muted">
@@ -82,13 +105,18 @@ export function CompanyClients({
           <dl className="company-client-dates">
             {client.last_visit && (
               <div>
-                <dt>Último atendimento</dt>
+                <dt>
+                  <Clock3 size={14} aria-hidden="true" /> Último atendimento
+                </dt>
                 <dd>{dateTime(client.last_visit, timezone)}</dd>
               </div>
             )}
             {client.next_visit && (
               <div>
-                <dt>Próximo agendamento</dt>
+                <dt>
+                  <CalendarDays size={14} aria-hidden="true" /> Próximo
+                  agendamento
+                </dt>
                 <dd>{dateTime(client.next_visit, timezone)}</dd>
               </div>
             )}
@@ -109,8 +137,18 @@ export function CompanyReviewSummary({
       <div>
         <strong className="metric-value">
           {summary.count
-            ? `${summary.average.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} ★`
+            ? summary.average.toLocaleString("pt-BR", {
+                maximumFractionDigits: 1,
+              })
             : "—"}
+          {summary.count > 0 && (
+            <Star
+              size={24}
+              className="business-rating-star"
+              fill="currentColor"
+              aria-hidden="true"
+            />
+          )}
         </strong>
         <p className="muted">
           {summary.count} {summary.count === 1 ? "avaliação" : "avaliações"}
@@ -125,7 +163,10 @@ export function CompanyReviewSummary({
           .sort((a, b) => b.rating - a.rating)
           .map((item) => (
             <div key={item.rating}>
-              <span>{item.rating} ★</span>
+              <span>
+                {item.rating}{" "}
+                <Star size={12} fill="currentColor" aria-hidden="true" />
+              </span>
               <meter
                 min={0}
                 max={Math.max(1, summary.count)}
@@ -149,22 +190,35 @@ export function CompanyReviews({
 }) {
   if (!reviews.length)
     return (
-      <p className="muted">
-        Após um atendimento concluído, o cliente poderá avaliar sua empresa.
-      </p>
+      <EmptyState
+        icon={<MessageSquare size={22} aria-hidden="true" />}
+        title="Ainda não há avaliações"
+        description="Após um atendimento concluído, o cliente poderá avaliar sua empresa. As avaliações aparecerão aqui."
+      />
     );
   return (
     <div className="company-list">
       {reviews.map((review) => (
         <article className="company-review-row stack" key={review.id}>
           <div className="inline between">
-            <strong>{review.reviewer_name}</strong>
+            <span className="business-review-author">
+              <span className="business-initials" aria-hidden="true">
+                {initials(review.reviewer_name)}
+              </span>
+              <strong>{review.reviewer_name}</strong>
+            </span>
             <span
               className="company-rating"
               aria-label={`${review.rating} de 5 estrelas`}
             >
-              {"★".repeat(review.rating)}
-              {"☆".repeat(5 - review.rating)}
+              {[1, 2, 3, 4, 5].map((value) => (
+                <Star
+                  key={value}
+                  size={15}
+                  fill={value <= review.rating ? "currentColor" : "none"}
+                  aria-hidden="true"
+                />
+              ))}
             </span>
           </div>
           {review.comment && <p>{review.comment}</p>}

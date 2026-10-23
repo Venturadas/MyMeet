@@ -1,0 +1,377 @@
+.customer-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border: 1px solid #c5e2ff;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(120deg, #dceeff, #c2dfff 65%, #70b3ff);
+}
+.customer-hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 420px;
+  height: 420px;
+  border: 36px solid rgb(255 255 255 / 12%);
+  border-radius: 50%;
+  top: -80px;
+  right: -230px;
+}
+.customer-hero-copy {
+  z-index: 1;
+  width: 72%;
+  min-height: 132px;
+}
+.customer-hero-copy > p:first-child {
+  color: var(--brand-dark);
+  font-size: var(--font-base);
+}
+.customer-hero h1 {
+  margin: var(--space-1) 0 var(--space-2);
+  font-size: clamp(26px, 3vw, 32px);
+  color: var(--brand-navy-deep);
+}
+.customer-hero-description {
+  max-width: 330px;
+  font-size: var(--font-sm);
+  color: var(--muted);
+}
+.customer-hero-cloud {
+  position: absolute;
+  z-index: 0;
+  top: 10px;
+  right: -24px;
+  width: 150px;
+  height: auto;
+}
+.customer-hero-search,
+.entry-search {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-2);
+  border: 1px solid white;
+  border-radius: var(--radius-lg);
+  background: white;
+  box-shadow: var(--shadow-sm);
+}
+.customer-hero-search > svg,
+.entry-search > svg {
+  flex: 0 0 20px;
+  margin-left: var(--space-1);
+  color: var(--brand-dark);
+}
+.customer-hero-search input,
+.entry-search input {
+  min-width: 0;
+  border: 0 !important;
+  padding: var(--space-2) var(--space-1) !important;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: 16px;
+}
+.customer-hero-search .button,
+.entry-search .button {
+  padding-inline: var(--space-4);
+  flex-shrink: 0;
+}
+.customer-resume {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--brand-surface);
+  box-shadow: var(--shadow-sm);
+}
+.customer-resume:hover {
+  border-color: var(--input-border);
+  text-decoration: none;
+}
+.customer-resume > .media-image {
+  flex: 0 0 56px;
+}
+.customer-resume > div {
+  flex: 1;
+  min-width: 0;
+}
+.customer-resume h3 {
+  font-size: var(--font-base);
+  margin-bottom: var(--space-1);
+}
+.customer-resume p,
+.customer-resume small {
+  font-size: var(--font-sm);
+}
+.customer-resume small {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--brand-action);
+}
+.customer-resume > svg {
+  flex: 0 0 32px;
+  height: 32px;
+  padding: 6px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand-action);
+}
+.appointment-list {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--brand-surface);
+  box-shadow: var(--shadow-sm);
+}
+.appointment-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  gap: var(--space-2) var(--space-3);
+  align-items: center;
+  padding: var(--space-4);
+}
+.appointment-row + .appointment-row {
+  border-top: 1px solid var(--line);
+}
+.appointment-avatar {
+  grid-row: 1 / 3;
+  width: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+}
+.appointment-identity {
+  grid-column: 2;
+  min-width: 0;
+}
+.appointment-identity h3 {
+  margin-bottom: var(--space-1);
+  font-size: var(--font-sm);
+  letter-spacing: -0.015em;
+}
+.appointment-identity p,
+.appointment-price {
+  font-size: var(--font-xs);
+}
+.appointment-schedule {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  color: var(--muted);
+  font-size: var(--font-xs);
+}
+.appointment-schedule span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.appointment-row > .status {
+  grid-column: 2;
+  justify-self: start;
+}
+.appointment-options {
+  grid-column: 3;
+  grid-row: 1;
+  border: 0;
+  align-self: start;
+}
+.appointment-options > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target);
+  width: 44px;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+}
+.appointment-options > summary::-webkit-details-marker {
+  display: none;
+}
+.appointment-options[open] > summary {
+  margin: 0;
+  background: var(--brand-soft);
+}
+.appointment-options[open] {
+  grid-column: 1 / -1;
+  grid-row: auto;
+}
+.appointment-options[open] > summary {
+  position: absolute;
+  right: var(--space-4);
+  top: var(--space-4);
+}
+.appointment-options-panel {
+  width: 100%;
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  font-size: var(--font-sm);
+}
+.appointment-actions {
+  gap: var(--space-2);
+}
+.appointment-actions .button {
+  width: 100%;
+}
+.appointment-comment {
+  grid-column: 1 / -1;
+  padding-top: var(--space-2);
+  font-size: var(--font-sm);
+  color: var(--muted);
+}
+.customer-appointments {
+  gap: 0;
+}
+.customer-appointment-item {
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+}
+.customer-review-details {
+  padding-inline: var(--space-4);
+}
+.customer-review-form {
+  padding-bottom: var(--space-4);
+}
+.section-tabs {
+  gap: 0;
+  border-bottom: 1px solid var(--line);
+}
+.section-tabs a {
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  padding-inline: var(--space-4);
+  color: var(--muted);
+}
+.section-tabs a[aria-current="page"] {
+  border-bottom-color: var(--brand-action);
+  background: transparent;
+  color: var(--brand-action);
+}
+.customer-summary .metrics-strip {
+  padding: 0;
+  border: 0;
+  gap: var(--space-3);
+}
+.customer-summary .metrics-strip > div {
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--brand-surface);
+}
+.customer-summary .metric-value {
+  margin-top: var(--space-1);
+  font-size: 24px;
+}
+.workspace-pane {
+  max-width: 100%;
+}
+.profile-summary {
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--brand-surface);
+}
+.customer-form,
+.account-form,
+.settings-column {
+  max-width: 760px;
+}
+.settings-column,
+.customer-form {
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--brand-surface);
+}
+.settings-section:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.compact-review,
+.favorite-row {
+  padding-inline: var(--space-4);
+  background: var(--brand-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+}
+@media (min-width: 640px) {
+  .customer-hero {
+    padding: var(--space-8);
+  }
+  .customer-hero-cloud {
+    width: 220px;
+    right: var(--space-5);
+    top: -8px;
+  }
+  .customer-hero-copy {
+    min-height: 124px;
+  }
+  .appointment-row {
+    grid-template-columns: 48px minmax(120px, 1fr) minmax(122px, auto) auto 44px;
+    gap: var(--space-4);
+  }
+  .appointment-avatar {
+    grid-row: 1;
+    width: 48px;
+  }
+  .appointment-identity {
+    grid-column: 2;
+  }
+  .appointment-schedule {
+    grid-column: 3;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .appointment-row > .status {
+    grid-column: 4;
+  }
+  .appointment-options {
+    grid-column: 5;
+  }
+  .appointment-identity h3 {
+    font-size: var(--font-sm);
+  }
+}
+@media (min-width: 1024px) {
+  .customer-hero-copy {
+    min-height: 104px;
+  }
+  .customer-hero-cloud {
+    width: 240px;
+    top: -24px;
+    right: var(--space-10);
+  }
+  .customer-summary .customer-metrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (max-width: 359px) {
+  .customer-hero {
+    padding: var(--space-4);
+  }
+  .customer-hero-copy {
+    width: 76%;
+  }
+  .customer-hero-cloud {
+    width: 120px;
+    top: 28px;
+    right: -32px;
+  }
+  .customer-hero-search > svg,
+  .entry-search > svg {
+    display: none;
+  }
+  .customer-hero-search .button,
+  .entry-search .button {
+    padding-inline: var(--space-3);
+  }
+}

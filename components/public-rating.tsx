@@ -1,3 +1,4 @@
+import { Star } from "lucide-react";
 export function PublicRating({
   average,
   count,
@@ -24,9 +25,12 @@ export function PublicRating({
       className="public-rating"
       aria-label={`${formatted} de 5 estrelas, ${total} ${total === 1 ? "avaliação" : "avaliações"}`}
     >
-      <span className="public-rating-stars" aria-hidden="true">
-        ★
-      </span>{" "}
+      <Star
+        className="public-rating-stars"
+        size={15}
+        fill="currentColor"
+        aria-hidden="true"
+      />{" "}
       <strong>{formatted}</strong>{" "}
       <span className="muted">
         ({total} {total === 1 ? "avaliação" : "avaliações"})

@@ -77,8 +77,8 @@ export default async function Reschedule({
       {!["pending", "confirmed"].includes(a.status) ? (
         <p className="notice">Este agendamento não permite reagendamento.</p>
       ) : (
-        <div className="grid-2">
-          <form className="card stack" method="get">
+        <div className="grid-2 booking-grid">
+          <form className="card stack booking-step" method="get">
             <input type="hidden" name="from" value={workspace} />
             <label className="field">
               Nova data
@@ -95,7 +95,7 @@ export default async function Reschedule({
               Consultar horários
             </button>
           </form>
-          <form className="card stack" action={changeAppointment}>
+          <form className="card stack booking-step" action={changeAppointment}>
             <input name="appointment_id" type="hidden" value={id} />
             <input name="action" type="hidden" value="reschedule" />
             <input name="return_to" type="hidden" value={back} />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import type { BusinessAnalyticsReport } from "@/lib/business-analytics";
 
 function reportDate(date: string, includeYear = false) {
@@ -147,68 +148,92 @@ export function BusinessAnalytics({
           </output>
         </label>
       </figure>
-      <table className="report-table">
-        <caption className="sr-only">
-          Agendamentos por dia, de {reportDate(report.starts_on, true)} a{" "}
-          {reportDate(report.ends_on, true)}
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">Data</th>
-            <th scope="col">Agendamentos</th>
-            <th scope="col">Concluídos</th>
-            <th scope="col">Cancelados</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((day) => (
-            <tr key={day.date}>
-              <th scope="row">{reportDate(day.date, report.range === "1y")}</th>
-              <td>{day.appointments}</td>
-              <td>{day.completed}</td>
-              <td>{day.cancelled}</td>
-            </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr className="report-total">
-            <th scope="row">Total</th>
-            <td>{report.totals.appointments}</td>
-            <td>{report.totals.completed}</td>
-            <td>{report.totals.cancelled}</td>
-          </tr>
-        </tfoot>
-      </table>
-      {pageCount > 1 && (
-        <nav
-          className="inline between report-pagination"
-          aria-label="Dias do relatório"
-        >
-          <button
-            type="button"
-            className="button button-secondary"
-            disabled={currentPage === 0}
-            onClick={() => setTablePage(currentPage - 1)}
-          >
-            Anterior
-          </button>
-          <small aria-live="polite">
-            {currentPage + 1} de {pageCount}
+      <details className="business-report-details">
+        <summary>
+          Ver relatório por dia <ChevronDown size={18} aria-hidden="true" />
+        </summary>
+        <div className="stack">
+          <table className="report-table">
+            <caption className="sr-only">
+              Agendamentos por dia, de {reportDate(report.starts_on, true)} a{" "}
+              {reportDate(report.ends_on, true)}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Data</th>
+                <th scope="col">
+                  <span className="report-label-full">Agendamentos</span>
+                  <abbr className="report-label-short" title="Agendamentos">
+                    Agend.
+                  </abbr>
+                </th>
+                <th scope="col">
+                  <span className="report-label-full">Concluídos</span>
+                  <abbr className="report-label-short" title="Concluídos">
+                    Concl.
+                  </abbr>
+                </th>
+                <th scope="col">
+                  <span className="report-label-full">Cancelados</span>
+                  <abbr className="report-label-short" title="Cancelados">
+                    Canc.
+                  </abbr>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((day) => (
+                <tr key={day.date}>
+                  <th scope="row">
+                    {reportDate(day.date, report.range === "1y")}
+                  </th>
+                  <td>{day.appointments}</td>
+                  <td>{day.completed}</td>
+                  <td>{day.cancelled}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="report-total">
+                <th scope="row">Total</th>
+                <td>{report.totals.appointments}</td>
+                <td>{report.totals.completed}</td>
+                <td>{report.totals.cancelled}</td>
+              </tr>
+            </tfoot>
+          </table>
+          {pageCount > 1 && (
+            <nav
+              className="inline between report-pagination"
+              aria-label="Dias do relatório"
+            >
+              <button
+                type="button"
+                className="button button-secondary"
+                disabled={currentPage === 0}
+                onClick={() => setTablePage(currentPage - 1)}
+              >
+                Anterior
+              </button>
+              <small aria-live="polite">
+                {currentPage + 1} de {pageCount}
+              </small>
+              <button
+                type="button"
+                className="button button-secondary"
+                disabled={currentPage + 1 === pageCount}
+                onClick={() => setTablePage(currentPage + 1)}
+              >
+                Próxima
+              </button>
+            </nav>
+          )}
+          <small className="muted">
+            Por data do atendimento, no horário da empresa. Apenas o status
+            concluído entra no gráfico.
           </small>
-          <button
-            type="button"
-            className="button button-secondary"
-            disabled={currentPage + 1 === pageCount}
-            onClick={() => setTablePage(currentPage + 1)}
-          >
-            Próxima
-          </button>
-        </nav>
-      )}
-      <small className="muted">
-        Por data do atendimento, no horário da empresa. Apenas o status
-        concluído entra no gráfico.
-      </small>
+        </div>
+      </details>
     </>
   );
 }

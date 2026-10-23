@@ -1,9 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
+import {
+  ArrowRight,
+  CalendarDays,
+  ChevronRight,
+  Search,
+  Star,
+} from "lucide-react";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isConfigured, supabase } from "@/lib/supabase";
-import { Appointment, dateTime, money } from "@/lib/types";
+import { Appointment, dateTime, localDate, money } from "@/lib/types";
 import { signOut } from "@/lib/actions";
 import {
   changeCustomerEmail,
@@ -14,7 +22,16 @@ import {
 import { deleteReview, toggleFavorite } from "@/lib/engagement-actions";
 import { AppShell } from "@/components/app-shell";
 import { Notices } from "@/components/notices";
-import { Appointments } from "@/components/appointments";
+import {
+  Appointments,
+  type AppointmentBusiness,
+} from "@/components/appointments";
+import {
+  EmptyState,
+  ErrorState,
+  PageHeader,
+  SectionHeader,
+} from "@/components/ui";
 import { CustomerReviewForm } from "@/components/customer-review-form";
 import { MediaImage } from "@/components/media-image";
 import { MediaUploader } from "@/components/media-uploader";
@@ -86,11 +103,7 @@ function Failure({
 }: {
   message?: string;
 }) {
-  return (
-    <p className="notice error" role="alert">
-      {message}
-    </p>
-  );
+  return <ErrorState description={message} />;
 }
 function Empty({
   title,
@@ -100,10 +113,11 @@ function Empty({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="empty-state compact-empty">
-      <h3>{title}</h3>
-      {children}
-    </div>
+    <EmptyState
+      title={title}
+      icon={<CalendarDays size={24} />}
+      action={children}
+    />
   );
 }
 
@@ -151,74 +165,198 @@ function Pagination({
   );
 }
 
-async function Home({ db, userId }: { db: Db; userId: string }) {
-  const [profile, overview, appointments] = await Promise.all([
-    db.from("profiles").select("display_name").eq("id", userId).single(),
+async function appointmentBusinesses(db: Db, items: Appointment[]) {
+  const ids = [...new Set(items.map((item) => item.business_id))];
+  if (!ids.length) return {};
+  const result = await db
+    .from("business_catalog")
+    .select("id,name,logo_path")
+    .in("id", ids);
+  return Object.fromEntries(
+    (result.data || []).map((business) => [
+      business.id,
+      {
+        name: business.name as string,
+        logo_path: business.logo_path as string | null,
+      },
+    ]),
+  ) as Record<string, AppointmentBusiness>;
+}
+
+async function Home({
+  db,
+  userId,
+  name,
+}: {
+  db: Db;
+  userId: string;
+  name?: string | null;
+}) {
+  const now = new Date().toISOString();
+  const today = localDate();
+  // Brasília currently has a fixed UTC−03 offset; bound both ends explicitly so
+  // the server's timezone never decides what belongs to today's agenda.
+  const todayStart = new Date(`${today}T00:00:00-03:00`);
+  const tomorrowStart = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+  const [overview, appointments, todaysAppointments] = await Promise.all([
     db.rpc("customer_overview"),
     db
       .from("appointments")
       .select(appointmentFields)
       .eq("customer_id", userId)
       .in("status", ["pending", "confirmed"])
-      .gte("starts_at", new Date().toISOString())
+      .gte("starts_at", now)
       .order("starts_at")
+      .order("id")
+      .limit(3),
+    db
+      .from("appointments")
+      .select(appointmentFields)
+      .eq("customer_id", userId)
+      .neq("status", "cancelled")
+      .gte("starts_at", todayStart.toISOString())
+      .lt("starts_at", tomorrowStart.toISOString())
+      .order("starts_at")
+      .order("id")
       .limit(3),
   ]);
+  const upcomingItems = (appointments.data || []) as Appointment[];
+  const todayItems = (todaysAppointments.data || []) as Appointment[];
+  const businesses = await appointmentBusinesses(db, [
+    ...upcomingItems,
+    ...todayItems,
+  ]);
+  const nextAppointment = upcomingItems[0];
+  const nextBusiness =
+    nextAppointment && businesses[nextAppointment.business_id];
   const summary = overview.error
     ? null
     : overviewSchema.safeParse(overview.data);
   return (
     <>
-      <div className="page-intro inline between">
-        <div>
-          <span className="eyebrow">Área do cliente</span>
-          <h1>
-            {profile.data?.display_name
-              ? `Olá, ${profile.data.display_name.split(" ")[0]}.`
-              : "Seu próximo encontro."}
+      <section
+        className="customer-hero"
+        aria-labelledby="customer-welcome-title"
+      >
+        <div className="customer-hero-copy">
+          <p>Bem-vindo de volta,</p>
+          <h1 id="customer-welcome-title">
+            {name?.trim().split(/\s+/)[0] || "vamos agendar?"}
+            {name && <span aria-hidden="true"> 👋</span>}
           </h1>
-          <p className="muted">Seus horários, reunidos em um só lugar.</p>
+          <p className="customer-hero-description">
+            Encontre e agende seus serviços preferidos.
+          </p>
         </div>
-        <Link className="button" href="/empresas" prefetch={false}>
-          Agendar um serviço
-        </Link>
-      </div>
-      {!summary?.success ? (
-        <Failure />
-      ) : (
-        <dl className="metrics-strip customer-metrics" aria-label="Seu resumo">
-          <div>
-            <dt>Próximos</dt>
-            <dd className="metric-value">{summary.data.upcoming}</dd>
-          </div>
-          <div>
-            <dt>Concluídos</dt>
-            <dd className="metric-value">{summary.data.completed}</dd>
-          </div>
-          <div>
-            <dt>Gasto em atendimentos</dt>
-            <dd className="metric-value">
-              {money(summary.data.spending_cents)}
-            </dd>
-          </div>
-          <div>
-            <dt>Favoritas disponíveis</dt>
-            <dd className="metric-value">{summary.data.favorites}</dd>
-          </div>
-        </dl>
-      )}
-      <section className="stack">
-        <div className="inline between">
-          <h2>Próximos agendamentos</h2>
-          <Link href="/cliente?tab=agendamentos" prefetch={false}>
-            Ver todos
+        <Image
+          src="/brand/logo-icon.png"
+          width={256}
+          height={256}
+          sizes="(max-width: 600px) 136px, 220px"
+          alt=""
+          className="customer-hero-cloud"
+          aria-hidden="true"
+        />
+        <form
+          className="customer-hero-search"
+          role="search"
+          action="/empresas"
+          method="get"
+        >
+          <Search size={20} aria-hidden="true" />
+          <label className="sr-only" htmlFor="customer-search">
+            Buscar empresas
+          </label>
+          <input
+            id="customer-search"
+            type="search"
+            name="q"
+            maxLength={100}
+            placeholder="Buscar empresa"
+          />
+          <button className="button" type="submit">
+            Buscar
+          </button>
+        </form>
+      </section>
+      {nextAppointment && (
+        <section className="stack customer-continue">
+          <SectionHeader
+            title="Continuar de onde parou"
+            action={
+              <Link href="/cliente?tab=agendamentos" prefetch={false}>
+                Ver todos <ArrowRight size={16} aria-hidden="true" />
+              </Link>
+            }
+          />
+          <Link
+            className="customer-resume"
+            href="/cliente?tab=agendamentos"
+            prefetch={false}
+            aria-label={`Ver agendamento: ${nextAppointment.service_name}`}
+          >
+            <MediaImage
+              path={nextBusiness?.logo_path}
+              alt={nextBusiness ? `Logo de ${nextBusiness.name}` : "Empresa"}
+              fallback={nextBusiness?.name || nextAppointment.service_name}
+              width={56}
+              height={56}
+              className="company-logo"
+            />
+            <div>
+              <h3>{nextBusiness?.name || nextAppointment.service_name}</h3>
+              {nextBusiness && (
+                <p className="muted">{nextAppointment.service_name}</p>
+              )}
+              <small>
+                Seu próximo horário · {dateTime(nextAppointment.starts_at)}
+              </small>
+            </div>
+            <ChevronRight size={20} aria-hidden="true" />
           </Link>
-        </div>
+        </section>
+      )}
+      <section className="stack customer-today">
+        <SectionHeader
+          title="Agenda de hoje"
+          description="Horários de Brasília"
+          action={
+            <Link href="/cliente?tab=agendamentos" prefetch={false}>
+              Ver todos <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          }
+        />
+        {todaysAppointments.error ? (
+          <Failure />
+        ) : todayItems.length ? (
+          <Appointments
+            items={todayItems}
+            businesses={businesses}
+            returnTo="/cliente?tab=inicio"
+          />
+        ) : (
+          <Empty title="Sua agenda está livre hoje.">
+            <Link href="/empresas" prefetch={false}>
+              Encontrar empresas
+            </Link>
+          </Empty>
+        )}
+      </section>
+      <section className="stack customer-upcoming">
+        <SectionHeader
+          title="Próximos agendamentos"
+          action={
+            <Link href="/cliente?tab=agendamentos" prefetch={false}>
+              Ver todos <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          }
+        />
         {appointments.error ? (
           <Failure />
-        ) : appointments.data.length ? (
+        ) : upcomingItems.length ? (
           <Appointments
-            items={appointments.data as Appointment[]}
+            items={upcomingItems}
+            businesses={businesses}
             returnTo="/cliente?tab=agendamentos"
           />
         ) : (
@@ -229,6 +367,36 @@ async function Home({ db, userId }: { db: Db; userId: string }) {
           </Empty>
         )}
       </section>
+      {!summary?.success ? (
+        <Failure />
+      ) : (
+        <section className="stack customer-summary">
+          <SectionHeader title="Sua atividade" />
+          <dl
+            className="metrics-strip customer-metrics"
+            aria-label="Seu resumo"
+          >
+            <div>
+              <dt>Próximos</dt>
+              <dd className="metric-value">{summary.data.upcoming}</dd>
+            </div>
+            <div>
+              <dt>Concluídos</dt>
+              <dd className="metric-value">{summary.data.completed}</dd>
+            </div>
+            <div>
+              <dt>Gasto em atendimentos</dt>
+              <dd className="metric-value">
+                {money(summary.data.spending_cents)}
+              </dd>
+            </div>
+            <div>
+              <dt>Favoritas disponíveis</dt>
+              <dd className="metric-value">{summary.data.favorites}</dd>
+            </div>
+          </dl>
+        </section>
+      )}
     </>
   );
 }
@@ -242,24 +410,36 @@ async function AppointmentList({
   userId: string;
   params: Params;
 }) {
-  const history = params.list === "historico";
+  const filter = ["concluidos", "cancelados", "historico"].includes(
+    params.list || "",
+  )
+    ? params.list!
+    : "proximos";
+  const history = filter !== "proximos";
   const page = pageNumber(params.page);
   const now = new Date().toISOString();
   let query = db
     .from("appointments")
     .select(appointmentFields, { count: "exact" })
     .eq("customer_id", userId);
-  query = history
-    ? query
-        .or(`starts_at.lt.${now},status.in.(cancelled,completed)`)
-        .order("starts_at", { ascending: false })
-    : query
-        .in("status", ["pending", "confirmed"])
-        .gte("starts_at", now)
-        .order("starts_at");
+  if (filter === "concluidos" || filter === "cancelados") {
+    query = query
+      .eq("status", filter === "concluidos" ? "completed" : "cancelled")
+      .order("starts_at", { ascending: false });
+  } else if (history) {
+    query = query
+      .or(`starts_at.lt.${now},status.in.(cancelled,completed)`)
+      .order("starts_at", { ascending: false });
+  } else {
+    query = query
+      .in("status", ["pending", "confirmed"])
+      .gte("starts_at", now)
+      .order("starts_at");
+  }
   query = query.order("id");
   const result = await query.range((page - 1) * pageSize, page * pageSize - 1);
   const items = (result.data || []) as Appointment[];
+  const businesses = await appointmentBusinesses(db, items);
   const completed = items.filter((item) => item.status === "completed");
   const reviews = completed.length
     ? await db
@@ -292,20 +472,21 @@ async function AppointmentList({
         className="inline section-tabs"
         aria-label="Período dos agendamentos"
       >
-        <Link
-          href="/cliente?tab=agendamentos"
-          aria-current={!history ? "page" : undefined}
-          prefetch={false}
-        >
-          Próximos
-        </Link>
-        <Link
-          href="/cliente?tab=agendamentos&list=historico"
-          aria-current={history ? "page" : undefined}
-          prefetch={false}
-        >
-          Histórico
-        </Link>
+        {[
+          ["proximos", "Próximos"],
+          ["concluidos", "Concluídos"],
+          ["cancelados", "Cancelados"],
+          ["historico", "Histórico"],
+        ].map(([value, label]) => (
+          <Link
+            key={value}
+            href={`/cliente?tab=agendamentos${value === "proximos" ? "" : `&list=${value}`}`}
+            aria-current={filter === value ? "page" : undefined}
+            prefetch={false}
+          >
+            {label}
+          </Link>
+        ))}
       </nav>
       {result.error ? (
         <Failure />
@@ -327,6 +508,7 @@ async function AppointmentList({
             <div key={item.id} className="stack customer-appointment-item">
               <Appointments
                 items={[item]}
+                businesses={businesses}
                 returnTo="/cliente?tab=agendamentos"
               />
               {item.status === "completed" && !reviews?.error && (
@@ -350,7 +532,7 @@ async function AppointmentList({
           )}
           <Pagination
             tab="agendamentos"
-            list={history ? "historico" : undefined}
+            list={history ? filter : undefined}
             page={page}
             total={result.count || 0}
           />
@@ -392,12 +574,10 @@ async function Favorites({
   );
   return (
     <>
-      <div className="page-intro">
-        <h1>Empresas favoritas</h1>
-        <p className="muted">
-          Guarde as empresas para encontrar seu próximo horário.
-        </p>
-      </div>
+      <PageHeader
+        title="Empresas favoritas"
+        description="Guarde as empresas para encontrar seu próximo horário."
+      />
       {rows.error || catalog?.error ? (
         <Failure />
       ) : !ids.length ? (
@@ -444,7 +624,12 @@ async function Favorites({
                     )}
                     {business && business.rating_count > 0 && (
                       <small>
-                        ★ {Number(business.rating_average).toFixed(1)} ·{" "}
+                        <Star
+                          size={14}
+                          fill="currentColor"
+                          aria-hidden="true"
+                        />{" "}
+                        {Number(business.rating_average).toFixed(1)} ·{" "}
                         {business.rating_count}{" "}
                         {business.rating_count === 1
                           ? "avaliação"
@@ -518,12 +703,10 @@ async function Reviews({
   );
   return (
     <>
-      <div className="page-intro">
-        <h1>Minhas avaliações</h1>
-        <p className="muted">
-          Avalie um atendimento concluído pelo seu histórico.
-        </p>
-      </div>
+      <PageHeader
+        title="Minhas avaliações"
+        description="Avalie um atendimento concluído pelo seu histórico."
+      />
       {result.error ? (
         <Failure />
       ) : !reviews.length ? (
@@ -557,8 +740,14 @@ async function Reviews({
                     className="review-stars"
                     aria-label={`${review.rating} de 5 estrelas`}
                   >
-                    {"★".repeat(review.rating)}
-                    {"☆".repeat(5 - review.rating)}
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <Star
+                        key={value}
+                        size={15}
+                        fill={value <= review.rating ? "currentColor" : "none"}
+                        aria-hidden="true"
+                      />
+                    ))}
                   </span>
                 </div>
                 {review.comment && <p>{review.comment}</p>}
@@ -594,28 +783,29 @@ async function Reviews({
 }
 
 async function Profile({
-  db,
-  userId,
+  profile,
   email,
   createdAt,
 }: {
-  db: Db;
-  userId: string;
+  profile: {
+    data: {
+      display_name: string;
+      username: string | null;
+      phone: string | null;
+      avatar_path: string | null;
+    } | null;
+    error: unknown;
+  };
   email?: string;
   createdAt: string;
 }) {
-  const profile = await db
-    .from("profiles")
-    .select("display_name,username,phone,avatar_path")
-    .eq("id", userId)
-    .single();
   return (
     <>
-      <div className="page-intro">
-        <h1>Meu perfil</h1>
-        <p className="muted">Organize suas informações de conta.</p>
-      </div>
-      {profile.error ? (
+      <PageHeader
+        title="Meu perfil"
+        description="Organize suas informações de conta."
+      />
+      {profile.error || !profile.data ? (
         <Failure />
       ) : (
         <div className="settings-column stack">
@@ -704,10 +894,10 @@ async function Settings({
     .maybeSingle();
   return (
     <>
-      <div className="page-intro">
-        <h1>Configurações</h1>
-        <p className="muted">Conta, segurança e seus dados.</p>
-      </div>
+      <PageHeader
+        title="Configurações"
+        description="Conta, segurança e seus dados."
+      />
       <div className="settings-column stack">
         <section className="settings-section stack">
           <h2>Conta</h2>
@@ -796,7 +986,7 @@ async function Settings({
             </form>
           </details>
         </section>
-        <section className="settings-section stack">
+        <section id="notificacoes" className="settings-section stack">
           <h2>Notificações</h2>
           <p className="muted">
             Confirmações de conta, recuperação e alterações de acesso são
@@ -861,10 +1051,25 @@ export default async function Customer({
   } = await db.auth.getUser();
   if (!user)
     redirect(`/entrar?next=${encodeURIComponent(`/cliente?tab=${tab}`)}`);
+  const profile = await db
+    .from("profiles")
+    .select("display_name,username,phone,avatar_path")
+    .eq("id", user.id)
+    .single();
   return (
-    <AppShell active="cliente" workspace="cliente" activeTab={tab}>
+    <AppShell
+      active="cliente"
+      workspace="cliente"
+      activeTab={tab}
+      account={{
+        name: profile.data?.display_name,
+        avatarPath: profile.data?.avatar_path,
+      }}
+    >
       <Notices params={params} />
-      {tab === "inicio" && <Home db={db} userId={user.id} />}
+      {tab === "inicio" && (
+        <Home db={db} userId={user.id} name={profile.data?.display_name} />
+      )}
       {tab === "agendamentos" && (
         <AppointmentList db={db} userId={user.id} params={params} />
       )}
@@ -876,8 +1081,7 @@ export default async function Customer({
       )}
       {tab === "perfil" && (
         <Profile
-          db={db}
-          userId={user.id}
+          profile={profile}
           email={user.email}
           createdAt={user.created_at}
         />

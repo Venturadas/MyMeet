@@ -4,8 +4,8 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
 export default function Privacy() {
   return (
-    <main id="main" className="container workspace stack prose">
-      <Link href="/" aria-label="NuvLink, início">
+    <main id="main" className="container workspace stack prose entry-privacy">
+      <Link className="brand-link" href="/" aria-label="NuvLink, início">
         <BrandLogo />
       </Link>
       <div className="page-intro">
@@ -15,7 +15,13 @@ export default function Privacy() {
           Informações claras sobre o uso dos dados no NuvLink.
         </p>
       </div>
-      <section className="card stack">
+      <nav className="entry-privacy-index" aria-label="Nesta política">
+        <a href="#dados">Dados coletados</a>
+        <a href="#acesso">Acesso aos dados</a>
+        <a href="#direitos">Seus direitos</a>
+        <a href="#responsavel">Responsável e retenção</a>
+      </nav>
+      <section id="dados" className="card stack">
         <h2>O que coletamos e por quê</h2>
         <p>
           Seu nome e e-mail são usados para criar a conta, autenticar seu acesso
@@ -28,7 +34,8 @@ export default function Privacy() {
           usuário, telefone e foto de perfil opcionais; esses dados do perfil
           ficam disponíveis somente para você e para a administração do serviço.
           Não solicitamos CPF, endereço residencial de clientes, informações de
-          saúde ou dados de cartão. Não inclua dados sensíveis nos campos de texto.
+          saúde ou dados de cartão. Não inclua dados sensíveis nos campos de
+          texto.
         </p>
         <p>
           Para empresas assinantes, registramos o estado da assinatura, período
@@ -45,7 +52,7 @@ export default function Privacy() {
           Não inclua dados pessoais de terceiros no comentário.
         </p>
       </section>
-      <section className="card stack">
+      <section id="acesso" className="card stack">
         <h2>Quem pode acessar</h2>
         <p>
           Você acessa seu perfil e suas reservas. A empresa recebe seu nome e os
@@ -70,7 +77,7 @@ export default function Privacy() {
           contratos e as garantias de transferência internacional aplicáveis.
         </p>
       </section>
-      <section className="card stack">
+      <section id="direitos" className="card stack">
         <h2>Seus direitos e suas escolhas</h2>
         <p>
           No painel você pode exportar seus dados e registrar uma solicitação de
@@ -84,7 +91,7 @@ export default function Privacy() {
           encerrar a sessão pelo botão Sair.
         </p>
       </section>
-      <section className="card stack">
+      <section id="responsavel" className="card stack">
         <h2>Responsável e retenção</h2>
         <p>
           Responsável:{" "}

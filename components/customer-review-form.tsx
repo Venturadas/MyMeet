@@ -22,8 +22,7 @@ export function CustomerReviewForm({
           </option>
           {[5, 4, 3, 2, 1].map((value) => (
             <option value={value} key={value}>
-              {"★".repeat(value)} · {value}{" "}
-              {value === 1 ? "estrela" : "estrelas"}
+              {value} {value === 1 ? "estrela" : "estrelas"}
             </option>
           ))}
         </select>

@@ -1,5 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import {
+  ArrowUpRight,
+  CalendarDays,
+  Clock3,
+  ExternalLink,
+  Settings2,
+  Share2,
+} from "lucide-react";
+import { ErrorState, PageHeader } from "@/components/ui";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isConfigured, supabase } from "@/lib/supabase";
@@ -63,6 +72,16 @@ const tabLabels: Record<CompanyTab, string> = {
   galeria: "Galeria",
   configuracoes: "Configurações",
 };
+const tabDescriptions: Record<CompanyTab, string> = {
+  dashboard: "Sua agenda e os resultados do negócio, em um só lugar.",
+  agenda: "Acompanhe seus horários e gerencie cada atendimento.",
+  servicos: "Organize o que seus clientes podem agendar.",
+  clientes: "Consulte o histórico de quem já agendou com você.",
+  avaliacoes: "Veja a experiência dos seus clientes após os atendimentos.",
+  perfil: "Apresente sua empresa e compartilhe sua agenda.",
+  galeria: "Mostre seu espaço, seus trabalhos e sua equipe.",
+  configuracoes: "Defina o expediente e gerencie seu acesso.",
+};
 const appointmentColumns =
   "id,business_id,service_id,service_name,customer_id,customer_name,starts_at,ends_at,status,price_cents,comment";
 const pageSize = 25;
@@ -89,9 +108,9 @@ const professionalsSchema = z
 
 function LoadError({ label = "os dados" }: { label?: string }) {
   return (
-    <p className="notice error" role="alert">
-      Não foi possível carregar {label}. Atualize a página e tente novamente.
-    </p>
+    <ErrorState
+      description={`Não foi possível carregar ${label}. Tente novamente em instantes.`}
+    />
   );
 }
 function Pagination({
@@ -170,11 +189,18 @@ export default async function Company({
     (tab === "perfil"
       ? ",category,city,state,address,phone,whatsapp,instagram,logo_path,cover_path"
       : "");
-  const { data, error } = await db
-    .from("businesses")
-    .select(businessColumns)
-    .eq("owner_id", user.id)
-    .maybeSingle();
+  const [{ data, error }, profile] = await Promise.all([
+    db
+      .from("businesses")
+      .select(businessColumns)
+      .eq("owner_id", user.id)
+      .maybeSingle(),
+    db
+      .from("profiles")
+      .select("display_name,avatar_path")
+      .eq("id", user.id)
+      .single(),
+  ]);
   const business = data as Business | null;
   let content: React.ReactNode = null;
   if (business && !error) {
@@ -196,7 +222,7 @@ export default async function Company({
       content = (
         <div className="stack">
           <section
-            className="dashboard stack"
+            className="dashboard business-dashboard stack"
             aria-labelledby="analytics-heading"
           >
             <div className="report-heading">
@@ -218,6 +244,7 @@ export default async function Company({
             {report ? (
               <>
                 <p className="company-today">
+                  <CalendarDays size={17} aria-hidden="true" />
                   <strong>{report.days.at(-1)!.appointments}</strong>{" "}
                   {report.days.at(-1)!.appointments === 1
                     ? "agendamento hoje"
@@ -232,8 +259,12 @@ export default async function Company({
           <section className="stack" aria-labelledby="upcoming-heading">
             <div className="inline between">
               <h2 id="upcoming-heading">Próximos agendamentos</h2>
-              <Link href="/empresa?tab=agenda" prefetch={false}>
-                Ver agenda
+              <Link
+                className="business-section-link"
+                href="/empresa?tab=agenda"
+                prefetch={false}
+              >
+                Ver agenda <ArrowUpRight size={16} aria-hidden="true" />
               </Link>
             </div>
             {upcoming.error ? (
@@ -249,13 +280,13 @@ export default async function Company({
           </section>
           <div className="company-setup-links inline">
             <Link href="/empresa?tab=servicos" prefetch={false}>
-              Configurar serviços
+              <Settings2 size={18} aria-hidden="true" /> Configurar serviços
             </Link>
             <Link href="/empresa?tab=configuracoes" prefetch={false}>
-              Horários de atendimento
+              <Clock3 size={18} aria-hidden="true" /> Horários de atendimento
             </Link>
-            <Link href="/empresa?tab=perfil" prefetch={false}>
-              Compartilhar agenda
+            <Link href="/empresa?tab=perfil#company-share" prefetch={false}>
+              <Share2 size={18} aria-hidden="true" /> Compartilhar agenda
             </Link>
           </div>
         </div>
@@ -426,18 +457,39 @@ export default async function Company({
         : professionalsSchema.safeParse(professionalsResult.data);
       content = (
         <div className="stack">
-          <div className="company-profile-media">
-            <MediaUploader
-              kind="logo"
-              label="Logo da empresa"
-              currentPath={business.logo_path}
-            />
-            <MediaUploader
-              kind="cover"
-              label="Foto de capa"
-              currentPath={business.cover_path}
-            />
-          </div>
+          <nav
+            className="business-profile-nav"
+            aria-label="Seções do perfil da empresa"
+          >
+            <a href="#company-images">Imagens</a>
+            <a href="#company-profile">Dados e contatos</a>
+            <a href="#company-professionals">Profissionais</a>
+            <a href="#company-share">Compartilhar</a>
+          </nav>
+          <section
+            className="business-panel stack"
+            id="company-images"
+            aria-labelledby="company-images-heading"
+          >
+            <div className="section-heading">
+              <h2 id="company-images-heading">Imagens da empresa</h2>
+            </div>
+            <p className="muted">
+              Uma logo e uma capa ajudam seus clientes a reconhecer seu negócio.
+            </p>
+            <div className="company-profile-media">
+              <MediaUploader
+                kind="logo"
+                label="Logo da empresa"
+                currentPath={business.logo_path}
+              />
+              <MediaUploader
+                kind="cover"
+                label="Foto de capa"
+                currentPath={business.cover_path}
+              />
+            </div>
+          </section>
           <CompanyProfileForm business={business} />
           {professionals?.success ? (
             <CompanyProfessionals
@@ -483,7 +535,7 @@ export default async function Company({
         .order("weekday");
       content = (
         <div className="stack">
-          <section className="stack">
+          <section className="business-panel stack">
             <h2>Horários de atendimento</h2>
             {result.error ? (
               <LoadError label="os horários" />
@@ -493,7 +545,7 @@ export default async function Company({
               />
             )}
           </section>
-          <section className="stack">
+          <section className="business-panel stack">
             <h2>Empresa e acesso</h2>
             <div className="inline">
               <Link
@@ -520,30 +572,45 @@ export default async function Company({
     }
   }
   return (
-    <AppShell active="empresa" workspace="empresa" activeTab={tab}>
-      <div className="page-intro inline between">
-        <div>
-          <span className="eyebrow">{business?.name || "Minha empresa"}</span>
-          <h1>{business ? tabLabels[tab] : "Crie sua empresa"}</h1>
-        </div>
-        {business && (
-          <Link
-            className="button button-secondary"
-            href={`/agendar/${business.slug}`}
-            prefetch={false}
-          >
-            Ver perfil público
-          </Link>
+    <AppShell
+      active="empresa"
+      workspace="empresa"
+      activeTab={tab}
+      account={{
+        name: profile.data?.display_name,
+        avatarPath: profile.data?.avatar_path,
+      }}
+    >
+      <div className="business-workspace stack">
+        <PageHeader
+          eyebrow={business?.name || "Minha empresa"}
+          title={business ? tabLabels[tab] : "Crie sua empresa"}
+          description={
+            business
+              ? tabDescriptions[tab]
+              : "Comece pelo nome. Você pode completar o perfil depois."
+          }
+          action={
+            business ? (
+              <Link
+                className="button button-secondary"
+                href={`/agendar/${business.slug}`}
+                prefetch={false}
+              >
+                Ver perfil público <ExternalLink size={16} aria-hidden="true" />
+              </Link>
+            ) : undefined
+          }
+        />
+        <Notices params={params} />
+        {error ? (
+          <LoadError label="sua empresa" />
+        ) : business ? (
+          content
+        ) : (
+          <CompanyCreationForm />
         )}
       </div>
-      <Notices params={params} />
-      {error ? (
-        <LoadError label="sua empresa" />
-      ) : business ? (
-        content
-      ) : (
-        <CompanyCreationForm />
-      )}
     </AppShell>
   );
 }

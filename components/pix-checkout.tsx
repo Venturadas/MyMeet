@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowRight, CircleCheck, Copy } from "lucide-react";
 import { BUSINESS_PRICE_CENTS } from "@/lib/billing-plan";
 import { dateTime, money } from "@/lib/types";
 
@@ -201,7 +202,8 @@ export function PixCheckout({
 
   if (checkout.subscription.active) {
     return (
-      <div className="stack" role="status">
+      <div className="stack pix-status pix-status--active" role="status">
+        <CircleCheck size={24} aria-hidden="true" />
         <strong>Sua assinatura está ativa.</strong>
         {checkout.subscription.expiresAt && (
           <p className="muted">
@@ -209,7 +211,7 @@ export function PixCheckout({
           </p>
         )}
         <Link className="button" href="/empresa">
-          Entrar na minha empresa
+          Entrar na minha empresa <ArrowRight size={17} aria-hidden="true" />
         </Link>
       </div>
     );
@@ -217,7 +219,7 @@ export function PixCheckout({
 
   if (!configured) {
     return (
-      <div className="stack">
+      <div className="stack pix-status">
         <button className="button" disabled>
           Pagamento indisponível
         </button>
@@ -295,7 +297,7 @@ export function PixCheckout({
                 type="button"
                 onClick={() => void copyCode()}
               >
-                Copiar código Pix
+                <Copy size={17} aria-hidden="true" /> Copiar código Pix
               </button>
             </>
           )}
@@ -359,7 +361,8 @@ export function PixCheckout({
           Se você já pagou, verifique o pagamento antes de tentar outro Pix.
           {supportEmail && (
             <>
-              {" "}Se precisar de ajuda,{" "}
+              {" "}
+              Se precisar de ajuda,{" "}
               <a href={`mailto:${supportEmail}`}>fale com o suporte</a>.
             </>
           )}

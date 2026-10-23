@@ -1,6 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./workspace.css";
+import "./shell.css";
+import "./customer.css";
+import "./discovery.css";
+import "./business.css";
+import "./entry.css";
 import "@/components/notifications.css";
 import { NotificationProvider } from "@/components/notifications";
 
@@ -44,13 +49,19 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/brand/favicon.ico", sizes: "16x16 32x32 48x48", type: "image/x-icon" },
+      {
+        url: "/brand/favicon.ico",
+        sizes: "16x16 32x32 48x48",
+        type: "image/x-icon",
+      },
       { url: "/brand/icon-16.png", sizes: "16x16", type: "image/png" },
       { url: "/brand/icon-32.png", sizes: "32x32", type: "image/png" },
       { url: "/brand/icon-48.png", sizes: "48x48", type: "image/png" },
     ],
     shortcut: "/brand/favicon.ico",
-    apple: [{ url: "/brand/icon-180.png", sizes: "180x180", type: "image/png" }],
+    apple: [
+      { url: "/brand/icon-180.png", sizes: "180x180", type: "image/png" },
+    ],
   },
   openGraph: {
     type: "website",
@@ -63,7 +74,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "NuvLink",
     description,
-    images: [{ url: "/opengraph-image", alt: "NuvLink — Encontre. Agende. Conecte." }],
+    images: [
+      { url: "/opengraph-image", alt: "NuvLink — Encontre. Agende. Conecte." },
+    ],
   },
 };
 

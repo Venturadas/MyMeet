@@ -1,0 +1,323 @@
+.app-frame {
+  min-height: 100dvh;
+  background: var(--background);
+}
+.app-sidebar {
+  display: none;
+}
+.app-main-column {
+  min-width: 0;
+}
+.app-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 76px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--brand-surface);
+  border-bottom: 1px solid var(--line);
+}
+.app-mobile-brand .brand-logo-image {
+  width: 164px;
+}
+.app-topbar-context,
+.app-search-shortcut {
+  display: none;
+}
+.app-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.app-account {
+  position: relative;
+  border: 0;
+  flex: 0 0 auto;
+}
+.app-account-trigger {
+  display: flex;
+  min-width: var(--touch-target);
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0;
+  list-style: none;
+  min-height: var(--touch-target);
+}
+.app-account-trigger::-webkit-details-marker,
+.app-more-trigger::-webkit-details-marker {
+  display: none;
+}
+.app-account[open] > summary,
+.app-more[open] > summary {
+  margin-bottom: 0;
+}
+.app-avatar {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 50%;
+}
+.app-account-name {
+  display: none;
+}
+.app-account-trigger > svg {
+  display: none;
+}
+.app-account-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 232px;
+  z-index: 60;
+  padding: var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--brand-surface);
+  box-shadow: var(--shadow-popover);
+}
+.app-account-panel a,
+.app-account-panel button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  background: transparent;
+  text-align: left;
+  font-size: var(--font-sm);
+}
+.app-account-panel a:hover,
+.app-account-panel button:hover {
+  background: var(--brand-soft);
+  text-decoration: none;
+}
+.app-content {
+  width: min(100%, 1328px);
+  min-width: 0;
+  margin-inline: auto;
+  padding: var(--space-5) var(--space-4)
+    calc(100px + env(safe-area-inset-bottom));
+  gap: var(--space-6);
+}
+.app-content > * {
+  min-width: 0;
+}
+.app-bottom-nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 50;
+  padding: var(--space-2) var(--space-2)
+    calc(var(--space-2) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--brand-surface);
+}
+.app-bottom-nav > a,
+.app-more-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-width: 0;
+  min-height: 52px;
+  margin: 0;
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  text-decoration: none;
+  list-style: none;
+}
+.app-bottom-nav > a[aria-current="page"],
+.app-more.is-active > summary,
+.app-more[open] > summary {
+  color: var(--brand-action);
+  background: var(--brand-soft);
+  font-weight: 600;
+}
+.app-more {
+  border: 0;
+  min-width: 0;
+}
+.app-more-panel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: var(--space-3);
+  left: var(--space-3);
+  max-width: 480px;
+  max-height: min(70dvh, 560px);
+  margin-left: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--brand-surface);
+  box-shadow: var(--shadow-popover);
+}
+.app-side-links {
+  display: grid;
+  gap: var(--space-1);
+}
+.app-side-links a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 46px;
+  padding: var(--space-3);
+  color: var(--muted);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-sm);
+}
+.app-side-links a svg {
+  flex-shrink: 0;
+}
+.app-side-links a:hover {
+  text-decoration: none;
+  background: var(--brand-soft);
+}
+.app-side-links a[aria-current="page"] {
+  background: var(--brand-soft);
+  color: var(--brand-action);
+  font-weight: 600;
+}
+.app-switch,
+.app-signout {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font-size: var(--font-sm);
+}
+.app-more-panel .app-switch {
+  border-top: 1px solid var(--line);
+  margin-top: var(--space-2);
+  border-radius: 0;
+}
+.app-switch:hover,
+.app-signout:hover {
+  background: var(--brand-soft);
+  text-decoration: none;
+}
+@media (max-width: 359px) {
+  .app-mobile-brand .brand-logo-image {
+    width: 140px;
+  }
+  .app-notifications-link {
+    width: var(--touch-target);
+    flex-basis: var(--touch-target);
+  }
+}
+@media (min-width: 640px) {
+  .app-topbar {
+    padding-inline: var(--space-6);
+  }
+  .app-content {
+    padding-inline: var(--space-6);
+    padding-top: var(--space-6);
+  }
+  .app-account-name {
+    display: block;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .app-account-trigger > svg,
+  .app-search-shortcut {
+    display: inline-flex;
+  }
+  .app-bottom-nav > a,
+  .app-more-trigger {
+    font-size: var(--font-xs);
+  }
+}
+@media (min-width: 1024px) {
+  .app-sidebar {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 216px;
+    padding: var(--space-6) var(--space-3) var(--space-4);
+    overflow-y: auto;
+    background: var(--brand-navy-deep);
+    color: white;
+  }
+  .app-sidebar-brand {
+    margin: 0 var(--space-3) var(--space-8);
+  }
+  .app-sidebar-brand .brand-logo-image {
+    width: 160px;
+  }
+  .app-sidebar-label {
+    margin: 0 var(--space-3) var(--space-3);
+    color: #b0c9ea;
+    font-size: var(--font-xs);
+  }
+  .app-sidebar .app-side-links a {
+    color: #e1ecfc;
+    font-size: 13px;
+  }
+  .app-sidebar .app-side-links a:hover {
+    color: white;
+    background: rgb(255 255 255 / 8%);
+  }
+  .app-sidebar .app-side-links a[aria-current="page"] {
+    background: var(--brand-action);
+    color: white;
+  }
+  .app-sidebar-bottom {
+    margin-top: auto;
+    padding-top: var(--space-8);
+  }
+  .app-sidebar .app-switch:hover,
+  .app-sidebar .app-signout:hover {
+    background: rgb(255 255 255 / 8%);
+  }
+  .app-privacy {
+    display: flex;
+    min-height: var(--touch-target);
+    align-items: center;
+    margin: var(--space-2) var(--space-3) 0;
+    color: #b0c9ea;
+    font-size: 11px;
+  }
+  .app-main-column {
+    margin-left: 216px;
+  }
+  .app-topbar {
+    min-height: 80px;
+    padding-inline: var(--space-8);
+    justify-content: space-between;
+  }
+  .app-topbar-context {
+    display: block;
+    color: var(--muted);
+    font-size: var(--font-sm);
+  }
+  .app-mobile-brand,
+  .app-bottom-nav {
+    display: none;
+  }
+  .app-content {
+    padding: var(--space-8) var(--space-8) var(--space-12);
+  }
+}

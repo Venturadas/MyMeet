@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Heart } from "lucide-react";
 import { toggleFavorite } from "@/lib/engagement-actions";
 
 export function PublicFavorite({
@@ -18,7 +19,7 @@ export function PublicFavorite({
         className="button button-secondary favorite-toggle"
         href={`/entrar?next=${encodeURIComponent(path)}`}
       >
-        <span aria-hidden="true">♡</span> Favoritar
+        <Heart size={18} aria-hidden="true" /> Favoritar
       </Link>
     );
   return (
@@ -34,7 +35,11 @@ export function PublicFavorite({
         className="button button-secondary favorite-toggle"
         aria-pressed={favorite}
       >
-        <span aria-hidden="true">{favorite ? "♥" : "♡"}</span>{" "}
+        <Heart
+          size={18}
+          fill={favorite ? "currentColor" : "none"}
+          aria-hidden="true"
+        />{" "}
         {favorite ? "Favoritada" : "Favoritar"}
       </button>
     </form>

@@ -31,7 +31,11 @@ export function BusinessShare({
   }
 
   return (
-    <section className="card stack" aria-label="Compartilhar sua agenda">
+    <section
+      id="company-share"
+      className="card stack"
+      aria-label="Compartilhar sua agenda"
+    >
       <div>
         <span className="eyebrow">Seu link de agendamento</span>
         <h2>Compartilhe sua agenda</h2>
@@ -109,7 +113,9 @@ export function BusinessShare({
           </div>
         </details>
       ) : (
-        <p className="muted">O QR Code não está disponível. Use o link acima.</p>
+        <p className="muted">
+          O QR Code não está disponível. Use o link acima.
+        </p>
       )}
     </section>
   );

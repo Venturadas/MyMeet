@@ -1,6 +1,17 @@
 import Link from "next/link";
+import {
+  ArrowRight,
+  Clock3,
+  ImageIcon,
+  AtSign,
+  MapPin,
+  MessageCircle,
+  Phone,
+  Star,
+} from "lucide-react";
 import { MediaImage } from "@/components/media-image";
 import { PublicRating } from "@/components/public-rating";
+import { EmptyState } from "@/components/ui";
 import { money, type BusinessHours, type Service } from "@/lib/types";
 
 export type PublicCompany = {
@@ -126,72 +137,78 @@ export function PublicCompanyDetails({
           novamente em instantes.
         </p>
       )}
-      {(business.description ||
-        business.address ||
-        location ||
-        phone ||
-        whatsapp ||
-        instagram ||
-        hours.length > 0) && (
-        <section className="card stack public-section">
-          <h2>Sobre a empresa</h2>
-          {business.description && (
-            <p className="muted">{business.description}</p>
+      <section
+        id="sobre"
+        className="card stack public-section public-info-panel"
+      >
+        <h2>Sobre a empresa</h2>
+        <p className="muted">
+          {business.description ||
+            "A empresa ainda não adicionou uma descrição."}
+        </p>
+        <div className="public-details-grid">
+          {(business.address || location || phone || whatsapp || instagram) && (
+            <div className="stack">
+              {business.address && (
+                <p className="public-contact-line">
+                  <MapPin size={17} aria-hidden="true" />
+                  {business.address}
+                </p>
+              )}
+              {location && <p className="muted">{location}</p>}
+              <div className="inline">
+                {phone && (
+                  <a className="public-contact-link" href={phone}>
+                    <Phone size={16} aria-hidden="true" />
+                    {business.phone}
+                  </a>
+                )}
+                {whatsapp && (
+                  <a
+                    className="button button-secondary"
+                    href={whatsapp}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <MessageCircle size={17} aria-hidden="true" /> WhatsApp
+                  </a>
+                )}
+                {instagram && (
+                  <a
+                    className="public-contact-link"
+                    href={instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <AtSign size={17} aria-hidden="true" /> Instagram
+                  </a>
+                )}
+              </div>
+            </div>
           )}
-          <div className="public-details-grid">
-            {(business.address ||
-              location ||
-              phone ||
-              whatsapp ||
-              instagram) && (
-              <div className="stack">
-                {business.address && <p>{business.address}</p>}
-                {location && <p className="muted">{location}</p>}
-                <div className="inline">
-                  {phone && <a href={phone}>{business.phone}</a>}
-                  {whatsapp && (
-                    <a
-                      className="button button-secondary"
-                      href={whatsapp}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      WhatsApp
-                    </a>
-                  )}
-                  {instagram && (
-                    <a
-                      href={instagram}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Instagram
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
-            {hours.length > 0 && (
-              <div className="stack">
-                <h3>Horário de funcionamento</h3>
-                <dl className="public-hours">
-                  {hours.map((hour) => (
-                    <div key={hour.weekday}>
-                      <dt>{weekdays[hour.weekday]}</dt>
-                      <dd>
-                        {hour.start_time.slice(0, 5)} –{" "}
-                        {hour.end_time.slice(0, 5)}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
+          {hours.length > 0 && (
+            <div className="stack public-hours-panel">
+              <h3>Horário de funcionamento</h3>
+              <dl className="public-hours">
+                {hours.map((hour) => (
+                  <div key={hour.weekday}>
+                    <dt>{weekdays[hour.weekday]}</dt>
+                    <dd>
+                      {hour.start_time.slice(0, 5)} –{" "}
+                      {hour.end_time.slice(0, 5)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
+        </div>
+      </section>
       {services.length > 0 && (
-        <section className="card stack public-section">
+        <section
+          id="servicos"
+          className="card stack public-section public-info-panel"
+        >
           <h2>Serviços</h2>
           <div className="public-service-list">
             {services.map((service) => (
@@ -204,9 +221,12 @@ export function PublicCompanyDetails({
                   {service.description && (
                     <p className="muted">{service.description}</p>
                   )}
-                  <p className="muted">
-                    {service.duration_minutes} min ·{" "}
-                    {money(service.price_cents)}
+                  <p className="muted public-service-facts">
+                    <span>
+                      <Clock3 size={14} aria-hidden="true" />
+                      {service.duration_minutes} min
+                    </span>
+                    <strong>{money(service.price_cents)}</strong>
                   </p>
                 </div>
                 <Link
@@ -214,7 +234,7 @@ export function PublicCompanyDetails({
                   className="button button-secondary"
                   href={`/agendar/${business.slug}?${new URLSearchParams({ service: service.id, date })}#reservar`}
                 >
-                  Agendar
+                  Agendar <ArrowRight size={16} aria-hidden="true" />
                 </Link>
               </article>
             ))}
@@ -222,8 +242,15 @@ export function PublicCompanyDetails({
         </section>
       )}
       {professionals.length > 0 && (
-        <section className="card stack public-section">
+        <section
+          id="profissionais"
+          className="card stack public-section public-info-panel"
+        >
           <h2>Profissionais</h2>
+          <p className="muted">
+            Conheça a equipe. Os horários disponíveis seguem a agenda da
+            empresa.
+          </p>
           <div className="public-professionals">
             {professionals.map((person) => (
               <article className="inline" key={person.id}>
@@ -244,9 +271,12 @@ export function PublicCompanyDetails({
           </div>
         </section>
       )}
-      {gallery.length > 0 && (
-        <section className="card stack public-section">
-          <h2>Galeria</h2>
+      <section
+        id="galeria"
+        className="card stack public-section public-info-panel"
+      >
+        <h2>Galeria</h2>
+        {gallery.length > 0 ? (
           <div className="public-gallery">
             {gallery.map((photo, index) => (
               <MediaImage
@@ -261,10 +291,25 @@ export function PublicCompanyDetails({
               />
             ))}
           </div>
-        </section>
-      )}
+        ) : (
+          <EmptyState
+            icon={<ImageIcon size={22} aria-hidden="true" />}
+            title={
+              unavailable
+                ? "Galeria indisponível no momento"
+                : "Ainda não há fotos"
+            }
+            description={
+              unavailable
+                ? "Tente carregar o perfil novamente em instantes."
+                : "As fotos adicionadas pela empresa aparecerão aqui."
+            }
+          />
+        )}
+      </section>
       <section
-        className="card stack public-section"
+        id="avaliacoes"
+        className="card stack public-section public-info-panel"
         aria-labelledby="public-reviews-title"
       >
         <div className="inline between">
@@ -283,14 +328,33 @@ export function PublicCompanyDetails({
               );
               return (
                 <article className="stack public-review" key={review.id}>
-                  <div className="inline between">
-                    <strong>{review.reviewer_name || "Cliente"}</strong>
+                  <div className="inline between public-review-heading">
+                    <div className="inline public-review-author">
+                      <MediaImage
+                        alt={`Avatar de ${review.reviewer_name || "Cliente"}`}
+                        fallback={review.reviewer_name || "Cliente"}
+                        width={36}
+                        height={36}
+                        className="review-avatar"
+                      />
+                      <strong>{review.reviewer_name || "Cliente"}</strong>
+                    </div>
                     <span
-                      className="public-rating-stars"
+                      className="public-rating-stars public-review-stars"
                       aria-label={`${review.rating} de 5 estrelas`}
                     >
-                      {"★".repeat(Math.max(0, Math.min(5, review.rating)))}
-                      {"☆".repeat(Math.max(0, 5 - Math.min(5, review.rating)))}
+                      {Array.from({ length: 5 }, (_, index) => (
+                        <Star
+                          key={index}
+                          size={15}
+                          fill={
+                            index < Math.max(0, Math.min(5, review.rating))
+                              ? "currentColor"
+                              : "none"
+                          }
+                          aria-hidden="true"
+                        />
+                      ))}
                     </span>
                   </div>
                   {review.comment && <p>{review.comment}</p>}
@@ -302,11 +366,19 @@ export function PublicCompanyDetails({
             })}
           </div>
         ) : (
-          <p className="muted">
-            {reviewsUnavailable
-              ? "As avaliações não puderam ser carregadas."
-              : "A empresa ainda não recebeu avaliações."}
-          </p>
+          <EmptyState
+            icon={<Star size={22} aria-hidden="true" />}
+            title={
+              reviewsUnavailable
+                ? "Avaliações indisponíveis no momento"
+                : "Ainda não há avaliações"
+            }
+            description={
+              reviewsUnavailable
+                ? "As avaliações não puderam ser carregadas. Tente novamente em instantes."
+                : "A empresa ainda não recebeu avaliações."
+            }
+          />
         )}
         <p className="muted">
           Clientes podem avaliar depois de um atendimento concluído, em{" "}

@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { BrandLogo } from "@/components/brand-logo";
+import { AppShell } from "@/components/app-shell";
+import { EmptyState } from "@/components/ui";
+import { FormSubmit } from "@/components/form-submit";
+import { CalendarDays } from "lucide-react";
 import { MediaImage } from "@/components/media-image";
 import { PublicRating } from "@/components/public-rating";
 import { PublicFavorite } from "@/components/public-favorite";
@@ -27,18 +30,19 @@ import {
 export const metadata: Metadata = { title: "Perfil da empresa e agendamentos" };
 function UnavailableAgenda() {
   return (
-    <main id="main" className="container workspace stack">
-      <Link href="/" aria-label="NuvLink, início">
-        <BrandLogo />
-      </Link>
+    <AppShell active="empresas" authenticated={false}>
       <h1>Agenda indisponível</h1>
-      <p className="notice error" role="alert">
-        Não foi possível carregar esta agenda. Tente novamente em instantes.
-      </p>
-      <Link className="button button-secondary" href="/empresas">
-        Encontrar empresas
-      </Link>
-    </main>
+      <EmptyState
+        title="Não foi possível carregar esta agenda"
+        description="Tente novamente em instantes ou encontre outra empresa."
+        icon={<CalendarDays size={24} />}
+        action={
+          <Link className="button button-secondary" href="/empresas">
+            Encontrar empresas
+          </Link>
+        }
+      />
+    </AppShell>
   );
 }
 
@@ -153,198 +157,203 @@ export default async function Booking({
   const slots = (slotResult.data || []) as Slot[];
   const detailsUnavailable = Boolean(
     hoursResult.error ||
-    galleryResult.error ||
-    professionalsResult.error ||
-    reviewsResult.error,
+      galleryResult.error ||
+      professionalsResult.error ||
+      reviewsResult.error,
   );
   const location = [business.city, business.state].filter(Boolean).join(" - ");
 
   return (
-    <main id="main" className="container workspace stack public-profile">
-      <nav className="inline between">
-        <Link href="/" aria-label="NuvLink, início">
-          <BrandLogo />
-        </Link>
-        <div className="inline">
-          <Link href="/empresas">Encontrar empresas</Link>
-          <Link
-            href={
-              user
-                ? "/cliente"
-                : `/entrar?next=${encodeURIComponent(loginDestination)}`
-            }
-          >
-            {user ? "Meus agendamentos" : "Entrar"}
-          </Link>
-        </div>
-      </nav>
-      <header className="public-company-header">
-        {business.cover_path && (
-          <MediaImage
-            path={business.cover_path}
-            alt={`Capa de ${business.name}`}
-            fallback={business.name}
-            width={1600}
-            height={600}
-            sizes="(max-width: 1000px) 100vw, 1100px"
-            className="public-company-cover"
-          />
-        )}
-        <div className="public-company-identity">
-          <MediaImage
-            path={business.logo_path}
-            alt={`Logo de ${business.name}`}
-            fallback={business.name}
-            width={80}
-            height={80}
-            className="company-logo"
-          />
-          <div className="stack public-company-meta">
-            <h1>{business.name}</h1>
-            {(business.category || location) && (
-              <p className="muted">
-                {[business.category, location].filter(Boolean).join(" · ")}
-              </p>
-            )}
-            <PublicRating
-              average={business.rating_average}
-              count={business.rating_count}
+    <AppShell
+      active="empresas"
+      authenticated={Boolean(user)}
+      loginHref={`/entrar?next=${encodeURIComponent(loginDestination)}`}
+    >
+      <div className="public-profile stack">
+        <header className="public-company-header">
+          {business.cover_path && (
+            <MediaImage
+              path={business.cover_path}
+              alt={`Capa de ${business.name}`}
+              fallback={business.name}
+              width={1600}
+              height={600}
+              sizes="(max-width: 1000px) 100vw, 1100px"
+              className="public-company-cover"
             />
-          </div>
-          <div className="inline public-company-actions">
-            <a className="button" href="#reservar">
-              Agendar um serviço
-            </a>
-            {!favoriteResult.error && (
-              <PublicFavorite
-                businessId={business.id}
-                path={loginDestination}
-                authenticated={Boolean(user)}
-                favorite={Boolean(favoriteResult.data)}
-              />
-            )}
-          </div>
-        </div>
-      </header>
-      <Notices params={query} />
-      {invalidDate && (
-        <p className="notice" role="status">
-          Escolha uma data entre hoje e os próximos 90 dias.
-        </p>
-      )}
-      {(serviceResult.error || slotResult.error) && (
-        <p className="notice error" role="alert">
-          Não foi possível carregar a disponibilidade. Confira a data ou tente
-          novamente.
-        </p>
-      )}
-      <section
-        id="reservar"
-        className="stack public-section"
-        aria-labelledby="booking-title"
-      >
-        <div className="inline between">
-          <h2 id="booking-title">Agendar um serviço</h2>
-          <small className="muted">Horários de Brasília</small>
-        </div>
-        <div className="grid-2">
-          <section className="card stack">
-            <h3>1. Serviço e dia</h3>
-            {!options.length ? (
-              <p className="muted">
-                {serviceResult.error
-                  ? "Os serviços não puderam ser carregados."
-                  : "Esta empresa ainda não disponibilizou serviços."}
-              </p>
-            ) : (
-              <form
-                key={`${selected?.id}-${date}`}
-                className="stack"
-                method="get"
-                action={`${path}#reservar`}
-              >
-                <label className="field">
-                  Serviço
-                  <select name="service" defaultValue={selected?.id}>
-                    {options.map((service) => (
-                      <option value={service.id} key={service.id}>
-                        {service.name} · {service.duration_minutes} min ·{" "}
-                        {money(service.price_cents)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  Data
-                  <input
-                    type="date"
-                    name="date"
-                    min={today}
-                    max={maxDate}
-                    defaultValue={date}
-                    required
-                  />
-                </label>
-                <button className="button button-secondary">
-                  Consultar horários
-                </button>
-              </form>
-            )}
-            {selected?.description && (
-              <p className="muted">{selected.description}</p>
-            )}
-          </section>
-          <section className="card stack">
-            <h3>2. Escolha seu horário</h3>
-            {selected && (
-              <form className="stack" action={bookAppointment}>
-                <input type="hidden" name="business_id" value={business.id} />
-                <input type="hidden" name="service_id" value={selected.id} />
-                <input type="hidden" name="next" value={path} />
-                <SlotPicker slots={slots} timezone={business.timezone} />
+          )}
+          <div className="public-company-identity">
+            <MediaImage
+              path={business.logo_path}
+              alt={`Logo de ${business.name}`}
+              fallback={business.name}
+              width={80}
+              height={80}
+              className="company-logo"
+            />
+            <div className="stack public-company-meta">
+              <h1>{business.name}</h1>
+              {(business.category || location) && (
                 <p className="muted">
-                  {selected.name} · {selected.duration_minutes} min ·{" "}
-                  {money(selected.price_cents)}
+                  {[business.category, location].filter(Boolean).join(" · ")}
                 </p>
-                {user ? (
-                  <>
-                    <small>
-                      A empresa recebe seu nome e os dados da reserva. Seu
-                      e-mail permanece privado.{" "}
-                      <Link href="/privacidade">Privacidade</Link>.
-                    </small>
-                    <button
+              )}
+              <PublicRating
+                average={business.rating_average}
+                count={business.rating_count}
+              />
+            </div>
+            <div className="inline public-company-actions">
+              <a className="button" href="#reservar">
+                Agendar um serviço
+              </a>
+              {!favoriteResult.error && (
+                <PublicFavorite
+                  businessId={business.id}
+                  path={loginDestination}
+                  authenticated={Boolean(user)}
+                  favorite={Boolean(favoriteResult.data)}
+                />
+              )}
+            </div>
+          </div>
+        </header>
+        <nav className="public-profile-nav" aria-label="Seções da empresa">
+          <a href="#reservar">Agendar</a>
+          <a href="#sobre">Sobre</a>
+          {options.length > 0 && <a href="#servicos">Serviços</a>}
+          {professionalsResult.data?.length ? (
+            <a href="#profissionais">Profissionais</a>
+          ) : null}
+          <a href="#galeria">Galeria</a>
+          <a href="#avaliacoes">Avaliações</a>
+        </nav>
+        <Notices params={query} />
+        {invalidDate && (
+          <p className="notice" role="status">
+            Escolha uma data entre hoje e os próximos 90 dias.
+          </p>
+        )}
+        {(serviceResult.error || slotResult.error) && (
+          <p className="notice error" role="alert">
+            Não foi possível carregar a disponibilidade. Confira a data ou tente
+            novamente.
+          </p>
+        )}
+        <section
+          id="reservar"
+          className="stack public-section"
+          aria-labelledby="booking-title"
+        >
+          <div className="inline between">
+            <h2 id="booking-title">Agendar um serviço</h2>
+            <small className="muted">Horários de Brasília</small>
+          </div>
+          <div className="grid-2 booking-grid">
+            <section className="card stack booking-step">
+              <h3>
+                <span className="booking-step-number">1</span>Serviço e dia
+              </h3>
+              {!options.length ? (
+                <p className="muted">
+                  {serviceResult.error
+                    ? "Os serviços não puderam ser carregados."
+                    : "Esta empresa ainda não disponibilizou serviços."}
+                </p>
+              ) : (
+                <form
+                  key={`${selected?.id}-${date}`}
+                  className="stack"
+                  method="get"
+                  action={`${path}#reservar`}
+                >
+                  <label className="field">
+                    Serviço
+                    <select name="service" defaultValue={selected?.id}>
+                      {options.map((service) => (
+                        <option value={service.id} key={service.id}>
+                          {service.name} · {service.duration_minutes} min ·{" "}
+                          {money(service.price_cents)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="field">
+                    Data
+                    <input
+                      type="date"
+                      name="date"
+                      min={today}
+                      max={maxDate}
+                      defaultValue={date}
+                      required
+                    />
+                  </label>
+                  <button className="button button-secondary">
+                    Consultar horários
+                  </button>
+                </form>
+              )}
+              {selected?.description && (
+                <p className="muted">{selected.description}</p>
+              )}
+            </section>
+            <section className="card stack booking-step">
+              <h3>
+                <span className="booking-step-number">2</span>Escolha seu
+                horário
+              </h3>
+              {selected && (
+                <form className="stack" action={bookAppointment}>
+                  <input type="hidden" name="business_id" value={business.id} />
+                  <input type="hidden" name="service_id" value={selected.id} />
+                  <input type="hidden" name="next" value={path} />
+                  <SlotPicker slots={slots} timezone={business.timezone} />
+                  <p className="muted">
+                    {selected.name} · {selected.duration_minutes} min ·{" "}
+                    {money(selected.price_cents)}
+                  </p>
+                  {user ? (
+                    <>
+                      <small>
+                        A empresa recebe seu nome e os dados da reserva. Seu
+                        e-mail permanece privado.{" "}
+                        <Link href="/privacidade">Privacidade</Link>.
+                      </small>
+                      <FormSubmit
+                        pendingLabel="Confirmando…"
+                        disabled={!slots.length || Boolean(slotResult.error)}
+                      >
+                        Confirmar agendamento
+                      </FormSubmit>
+                    </>
+                  ) : (
+                    <Link
                       className="button"
-                      disabled={!slots.length || Boolean(slotResult.error)}
+                      href={`/entrar?next=${encodeURIComponent(loginDestination)}`}
                     >
-                      Confirmar agendamento
-                    </button>
-                  </>
-                ) : (
-                  <Link
-                    className="button"
-                    href={`/entrar?next=${encodeURIComponent(loginDestination)}`}
-                  >
-                    Entrar para agendar
-                  </Link>
-                )}
-              </form>
-            )}
-          </section>
-        </div>
-      </section>
-      <PublicCompanyDetails
-        business={business}
-        services={options}
-        hours={(hoursResult.data || []) as BusinessHours[]}
-        gallery={(galleryResult.data || []) as PublicGallery[]}
-        professionals={(professionalsResult.data || []) as PublicProfessional[]}
-        reviews={(reviewsResult.data || []) as PublicReview[]}
-        date={date}
-        unavailable={detailsUnavailable}
-        reviewsUnavailable={Boolean(reviewsResult.error)}
-      />
-      <Link href="/privacidade">Privacidade e seus dados</Link>
-    </main>
+                      Entrar para agendar
+                    </Link>
+                  )}
+                </form>
+              )}
+            </section>
+          </div>
+        </section>
+        <PublicCompanyDetails
+          business={business}
+          services={options}
+          hours={(hoursResult.data || []) as BusinessHours[]}
+          gallery={(galleryResult.data || []) as PublicGallery[]}
+          professionals={
+            (professionalsResult.data || []) as PublicProfessional[]
+          }
+          reviews={(reviewsResult.data || []) as PublicReview[]}
+          date={date}
+          unavailable={detailsUnavailable}
+          reviewsUnavailable={Boolean(reviewsResult.error)}
+        />
+      </div>
+    </AppShell>
   );
 }

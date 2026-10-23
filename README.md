@@ -4,6 +4,8 @@ SaaS de agendas para empresas e clientes. Next.js, TypeScript, Supabase e Mercad
 
 NuvLink é a identidade oficial. A nuvem azul aprovada, as variantes da logo e as exceções técnicas estão documentadas em [docs/IDENTIDADE-NUVLINK.md](docs/IDENTIDADE-NUVLINK.md). O endereço publicado continua sendo https://nuvemmeet.vercel.app; a mudança de marca não altera URLs nem integrações.
 
+O design system, os componentes responsivos e o escopo da verificação visual estão descritos em [docs/REDESIGN-NUVLINK.md](docs/REDESIGN-NUVLINK.md).
+
 ## Uso
 
 Clientes criam uma conta gratuita, encontram a empresa em `/empresas`, escolhem serviço/data/horário em `/agendar/[slug]` e acompanham suas reservas em `/cliente`.

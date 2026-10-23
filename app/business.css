@@ -1,0 +1,278 @@
+.business-workspace {
+  gap: var(--space-6);
+}
+.business-panel {
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--brand-surface);
+  box-shadow: var(--shadow-sm);
+}
+.business-panel > p,
+.business-section-description {
+  font-size: var(--font-sm);
+}
+.business-dashboard {
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--brand-surface);
+}
+.business-dashboard .metrics-strip {
+  gap: var(--space-4);
+  border: 0;
+  padding-block: var(--space-2);
+}
+.business-dashboard .metrics-strip > div {
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--background);
+}
+.business-dashboard .metric-value {
+  margin-block: var(--space-1);
+  font-size: 28px;
+}
+.business-dashboard .report-chart {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+.business-dashboard .report-chart svg {
+  max-height: 240px;
+}
+.company-today,
+.business-section-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.business-section-link {
+  min-height: var(--touch-target);
+  font-size: var(--font-sm);
+  color: var(--brand-action);
+}
+.company-setup-links {
+  gap: var(--space-3);
+}
+.company-setup-links a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--brand-surface);
+  font-size: var(--font-sm);
+}
+.business-profile-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.business-profile-nav a {
+  display: flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  background: var(--brand-surface);
+}
+.business-profile-nav a:hover {
+  background: var(--brand-soft);
+  text-decoration: none;
+}
+.business-profile-form {
+  max-width: 100%;
+}
+.company-form-section {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-5);
+  background: var(--brand-surface);
+}
+.company-form-section summary,
+.business-add-section > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  list-style: none;
+}
+.company-form-section summary::-webkit-details-marker,
+.business-add-section > summary::-webkit-details-marker,
+.business-services .service-row > summary::-webkit-details-marker {
+  display: none;
+}
+.company-form-section > .stack {
+  padding-bottom: var(--space-4);
+}
+.business-chevron {
+  flex: 0 0 18px;
+  margin-left: auto;
+  transition: transform var(--motion-fast);
+}
+details[open] > summary .business-chevron {
+  transform: rotate(180deg);
+}
+.business-add-section {
+  padding: var(--space-2) var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--brand-surface);
+}
+.business-add-section > .service-form,
+.business-add-section > form {
+  padding-block: var(--space-3) var(--space-4);
+}
+.business-services .service-list {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--brand-surface);
+}
+.business-services .service-row {
+  padding: var(--space-2) var(--space-4);
+  border-top: 0;
+}
+.business-services .service-row:last-child {
+  border-bottom: 0;
+}
+.business-services .service-row summary {
+  flex-wrap: nowrap;
+  gap: var(--space-3);
+}
+.business-service-info {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  flex: 1;
+}
+.business-service-info strong {
+  font-weight: 600;
+}
+.business-service-info small {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  color: var(--muted);
+  font-weight: 400;
+}
+.business-service-state {
+  color: var(--success);
+  font-size: 11px;
+  border-radius: var(--radius-pill);
+  background: var(--success-soft);
+  padding: var(--space-1) var(--space-2);
+}
+.business-service-state.is-inactive {
+  color: var(--muted);
+  background: var(--background);
+}
+.service-form {
+  padding-block: var(--space-3);
+}
+.business-initials {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border-radius: var(--radius-md);
+  background: var(--brand-soft);
+  color: var(--brand-dark);
+  font-size: var(--font-sm);
+  font-weight: 600;
+}
+.business-review-author {
+  display: inline-flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+.business-rating-star {
+  color: var(--warning);
+  margin-left: var(--space-2);
+}
+.company-rating,
+.company-review-distribution span,
+.company-client-dates dt {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.business-workspace .company-review-row p {
+  font-size: var(--font-sm);
+}
+.business-workspace .company-client-row {
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  background: var(--brand-surface);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-3);
+}
+.company-client-dates {
+  width: 100%;
+  padding-left: 52px;
+}
+.business-workspace [id] {
+  scroll-margin-top: var(--space-6);
+}
+.business-workspace .report-table th,
+.business-workspace .report-table td {
+  padding-block: var(--space-3);
+}
+@media (min-width: 640px) {
+  .business-panel,
+  .business-dashboard {
+    padding: var(--space-6);
+  }
+  .company-client-dates {
+    width: auto;
+    padding-left: 0;
+  }
+}
+@media (max-width: 359px) {
+  .business-dashboard {
+    padding: var(--space-4);
+  }
+  .business-service-state {
+    display: none;
+  }
+}
+
+.business-report-details {
+  padding-top: var(--space-2);
+}
+.business-report-details > summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  list-style: none;
+}
+.business-report-details > summary::-webkit-details-marker {
+  display: none;
+}
+.business-report-details > summary svg {
+  transition: transform var(--motion-fast);
+}
+.business-report-details[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.report-label-short {
+  display: none;
+  text-decoration: none;
+}
+@media (max-width: 639px) {
+  .report-label-full {
+    display: none;
+  }
+  .report-label-short {
+    display: inline;
+  }
+  .report-table {
+    font-size: var(--font-xs);
+  }
+}
