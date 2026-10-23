@@ -2,15 +2,17 @@ import { NextResponse } from "next/server";
 import { billingHasCredentials, getBusinessBillingStatus } from "@/lib/billing";
 import { trustedBillingOrigin } from "@/lib/billing-policy";
 import { isConfigured, supabase } from "@/lib/supabase";
+import { operationalFailure } from "@/lib/operations";
 
 export const runtime = "nodejs";
 
-function reply(value: unknown, status = 200) {
+function reply(value: unknown, status = 200, requestId?: string) {
   return NextResponse.json(value, {
     status,
     headers: {
       "Cache-Control": "private, no-store",
       "Referrer-Policy": "no-referrer",
+      ...(requestId ? { "X-Request-ID": requestId } : {}),
     },
   });
 }
@@ -40,13 +42,14 @@ export async function GET(request: Request) {
   try {
     // The caller cannot supply a payment ID or another user's reference.
     return reply(await getBusinessBillingStatus(user.id));
-  } catch {
+  } catch (error) {
     return reply(
       {
         error:
           "Não foi possível consultar o pagamento. Tente novamente em instantes.",
       },
       503,
+      operationalFailure("billing.status_failed", error),
     );
   }
 }

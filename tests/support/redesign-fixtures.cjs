@@ -9,6 +9,7 @@ const ts = appRequire('typescript');
 const React = appRequire('react');
 const { renderToStaticMarkup } = appRequire('react-dom/server');
 const cache = new Map();
+let companyFixtureDb = null;
 const actionFiles = /lib\/(actions|customer-actions|company-actions|engagement-actions)\.ts$/;
 function load(relative) {
   const filename = path.resolve(root, relative);
@@ -22,14 +23,14 @@ function load(relative) {
   const original = mod.require.bind(mod);
   mod.require = id => {
     if (id === 'server-only') return {};
-    if (id === 'next/navigation') return { useRouter: () => ({ refresh() {}, push() {}, replace() {} }), redirect() { throw new Error('No fixture may authenticate or redirect.'); } };
+    if (id === 'next/navigation') return { useRouter: () => ({ refresh() {}, push() {}, replace() {} }), redirect(destination) { throw new Error(`Fixture redirect: ${destination}`); } };
     let file;
     if (id.startsWith('@/')) file = path.join(root, id.slice(2));
     else if (id.startsWith('.')) file = path.resolve(path.dirname(filename), id);
     if (file) {
       file = [file, `${file}.tsx`, `${file}.ts`].find(candidate => fs.existsSync(candidate));
       if (file && actionFiles.test(file)) return new Proxy({}, { get: (_, name) => `/__isolated-action/${String(name)}` });
-      if (file && /lib\/supabase\.ts$/.test(file)) return { isConfigured: () => false, isRegistrationOpen: () => false, supabase() { throw new Error('Fixtures must never connect to Supabase.'); } };
+      if (file && /lib\/supabase\.ts$/.test(file)) return { isConfigured: () => companyFixtureDb !== null, isRegistrationOpen: () => false, supabase() { if (companyFixtureDb) return companyFixtureDb; throw new Error('Fixtures must never connect to Supabase.'); } };
       if (file) return load(path.relative(root, file));
     }
     return original(id);
@@ -81,4 +82,29 @@ async function renderFixtures(origin) {
   const css = cssFiles.map(file => fs.readFileSync(path.join(root, file), 'utf8')).join('\n');
   return Object.fromEntries(Object.entries(scenarios).map(([name, tree]) => [name, `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="${origin}/"><title>Teste isolado ${name}</title><style>${css}</style></head><body data-isolated-fixture="true">${renderToStaticMarkup(h(NotificationProvider, null, tree))}</body></html>`]));
 }
-module.exports = { renderFixtures };
+async function renderExpiredCompanyAgenda(origin, hasCompany = true) {
+  const { items, business } = fixturesData();
+  companyFixtureDb = {
+    auth: { getUser: async () => ({ data: { user: { id: id(3) } } }) },
+    rpc: async (name) => {
+      if (name === 'has_active_business_subscription') return { data: false, error: null };
+      if (name === 'get_my_business_agenda_context') return { data: hasCompany ? { id: business.id, name: business.name, timezone: business.timezone } : null, error: null };
+      throw new Error(`Unexpected paid RPC in expired fixture: ${name}`);
+    },
+    from(table) {
+      if (!['profiles', 'appointments'].includes(table)) throw new Error(`Expired page must not query private company or paid resources: ${table}`);
+      const query = { select() { return query; }, eq() { return query; }, order() { return query; },
+        single: async () => ({ data: { display_name: 'Pessoa de teste', avatar_path: null } }),
+        range: async () => ({ data: items, count: items.length, error: null }) };
+      return query;
+    },
+  };
+  try {
+    const Company = load('app/empresa/page.tsx').default;
+    const tree = await Company({ searchParams: Promise.resolve({ tab: 'agenda' }) });
+    const { NotificationProvider } = load('components/notifications.tsx');
+    const css = cssFiles.map(file => fs.readFileSync(path.join(root, file), 'utf8')).join('\n');
+    return `<!doctype html><html lang="pt-BR"><head><base href="${origin}/"><style>${css}</style></head><body>${renderToStaticMarkup(h(NotificationProvider, null, tree))}</body></html>`;
+  } finally { companyFixtureDb = null; }
+}
+module.exports = { renderFixtures, renderExpiredCompanyAgenda };

@@ -1,8 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { withRequestTimeout } from "@/lib/server-fetch";
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
+  if (["/api/health", "/api/ready", "/api/billing/webhook"].includes(request.nextUrl.pathname)) return response;
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
     !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -12,6 +14,8 @@ export async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     {
+      global: { fetch: withRequestTimeout() },
+      db: { retry: false },
       cookieOptions: {
         httpOnly: true,
         sameSite: "lax",

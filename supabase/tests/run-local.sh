@@ -5,17 +5,27 @@ if [[ "${1:-}" == '--help' ]]; then
   cat <<'HELP'
 Usage: cd supabase/tests && npm ci && npm test
 PG_BIN=/path/to/postgresql/bin npm test   # Optional system PostgreSQL 15+
+PG_CLIENT_BIN=/path/to/postgresql/17/bin npm test  # pg_dump, pg_restore and psql
 DATABASE_URL=postgresql://...@localhost/... npm test
 
 DATABASE_URL must identify an EMPTY, local, disposable database whose name
 starts with nuvemmeet_security_. Tests create mock Auth objects; never use a real
 Supabase project. Without DATABASE_URL a temporary cluster is created and removed.
+The local test role must also create/drop the random isolated restore database.
+Backup clients must support the server version; the default embedded server is 17.
 HELP
   exit 0
 fi
 [[ $# -eq 0 ]] || { echo 'Unsupported argument. Use --help.' >&2; exit 1; }
 TEST_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export NODE_PATH="${NUVEMMEET_TEST_MODULES:-$TEST_ROOT/node_modules}${NODE_PATH:+:$NODE_PATH}"
+for client in pg_dump pg_restore psql; do
+  if [[ -n "${PG_CLIENT_BIN:-}" ]]; then
+    [[ -x "$PG_CLIENT_BIN/$client" ]] || { echo "Missing $client in PG_CLIENT_BIN; install PostgreSQL 17 clients. Use --help." >&2; exit 1; }
+  else
+    command -v "$client" >/dev/null || { echo "Missing $client; install PostgreSQL 17 clients or set PG_CLIENT_BIN. Use --help." >&2; exit 1; }
+  fi
+done
 
 if [[ -n "${DATABASE_URL:-}" ]]; then
   exec node "$TEST_ROOT/security.cjs"

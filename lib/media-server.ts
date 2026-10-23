@@ -4,6 +4,7 @@ import { isConfigured, supabase } from "./supabase";
 import { hasBusinessSubscription } from "./subscription";
 import { AVATAR_MEDIA_BUCKET, COMPANY_MEDIA_BUCKET, isMediaPath, isMediaRecordId, MEDIA_KINDS, type MediaKind } from "./media-path";
 import { MediaError } from "./media-request";
+import { operationalFailure } from "./operations";
 
 export const PRIVATE_MEDIA_HEADERS = {
   "Cache-Control": "private, no-store, max-age=0", "Pragma": "no-cache",
@@ -36,6 +37,7 @@ export async function mediaContext(kind: MediaKind): Promise<MediaContext> {
 }
 export function mediaResponse(data: unknown, status = 200) { return Response.json(data, { status, headers: PRIVATE_MEDIA_HEADERS }); }
 export function mediaFailure(error: unknown) {
+  if (!(error instanceof MediaError) || error.status >= 500) operationalFailure("media.request_failed");
   return mediaResponse({ error: error instanceof MediaError ? error.message : "Não foi possível salvar a imagem. Tente novamente." }, error instanceof MediaError ? error.status : 503);
 }
 export function assertOwnPath(context: MediaContext, kind: MediaKind, path: unknown): path is string {

@@ -36,12 +36,14 @@ function Action({
 export function Appointments({
   items,
   host = false,
+  allowReschedule = true,
   timezone = "America/Sao_Paulo",
   returnTo,
   businesses = {},
 }: {
   items: Appointment[];
   host?: boolean;
+  allowReschedule?: boolean;
   timezone?: string;
   returnTo?: string;
   businesses?: Record<string, AppointmentBusiness>;
@@ -141,13 +143,13 @@ export function Appointments({
                   {["pending", "confirmed"].includes(a.status) &&
                     (host || new Date(a.starts_at) > new Date()) && (
                       <>
-                        <Link
+                        {allowReschedule && <Link
                           className="button button-secondary"
                           href={`/reagendar/${a.id}${host ? "?from=empresa" : ""}`}
                           prefetch={false}
                         >
                           Reagendar
-                        </Link>
+                        </Link>}
                         <Action
                           appointment={a}
                           action="cancel"
