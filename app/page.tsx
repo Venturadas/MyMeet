@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Logo } from "@/components/ui";
+import { BrandLogo } from "@/components/brand-logo";
 import { BUSINESS_PRICE_CENTS } from "@/lib/billing-plan";
 import { money } from "@/lib/types";
 
@@ -26,8 +26,8 @@ export default function Home() {
           className="container app-nav home-nav"
           aria-label="Navegação principal"
         >
-          <Link className="brand-link" href="/" aria-label="NuvemMeet, início">
-            <Logo />
+          <Link className="brand-link" href="/" aria-label="NuvLink, início">
+            <BrandLogo />
           </Link>
           <div className="nav-links">
             <Link href="/empresas">Agendar</Link>
@@ -40,7 +40,7 @@ export default function Home() {
       </header>
       <main id="main" className="home-main">
         <section className="container home-hero">
-          <p className="eyebrow">Agenda online, sem complicação</p>
+          <p className="eyebrow">Encontre. Agende. Conecte.</p>
           <h1>
             Sua agenda, no ritmo <span>do seu negócio.</span>
           </h1>
@@ -71,7 +71,7 @@ export default function Home() {
         </section>
       </main>
       <footer className="container footer">
-        <span>NuvemMeet</span>
+        <BrandLogo variant="light" />
         <Link href="/privacidade">Privacidade e seus dados</Link>
       </footer>
     </>

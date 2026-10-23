@@ -1,4 +1,4 @@
-# Operação de privacidade do NuvemMeet
+# Operação de privacidade do NuvLink
 
 Responsável informado: Richard. Contato: richardsamiaventura@gmail.com. O envio de e-mails está configurado. Atendimento dos direitos, retenção, contratos, backups e segurança administrativa continuam responsabilidades operacionais do responsável. O código não certifica conformidade integral com a LGPD. O cadastro público está habilitado desde a autorização de lançamento nesta sessão; isso não resolve automaticamente as pendências operacionais descritas abaixo.
 
@@ -29,7 +29,7 @@ Antes de abrir para clientes, registre e ajuste esses prazos às obrigações re
 
 ## Hospedagem e segurança
 
-Banco/Auth: Supabase `us-west-2`, Estados Unidos. Aplicação: Vercel `iad1`, Estados Unidos. Revise contratos dos provedores e garantias de transferência internacional; não declare hospedagem brasileira. Defina responsabilidades de NuvemMeet e empresas sobre atendimento e dados das reservas.
+Banco/Auth: Supabase `us-west-2`, Estados Unidos. Aplicação: Vercel `iad1`, Estados Unidos. Revise contratos dos provedores e garantias de transferência internacional; não declare hospedagem brasileira. Defina responsabilidades de NuvLink e empresas sobre atendimento e dados das reservas.
 
 Ative MFA para as contas administrativas Supabase/Vercel/GitHub, limite quem tem acesso e preserve as políticas RLS. Nunca entregue `service_role` aos hosts. Configure uma rotina de backup protegido e teste a restauração em ambiente separado antes de operar com dados reais; um backup só é útil se a restauração funcionar. A disponibilidade/retencão dos backups do provedor depende do plano contratado e não foi certificada por estes testes.
 

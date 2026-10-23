@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Privacidade" };
 import Link from "next/link";
-import { Logo } from "@/components/ui";
+import { BrandLogo } from "@/components/brand-logo";
 export default function Privacy() {
   return (
     <main id="main" className="container workspace stack prose">
-      <Link href="/" aria-label="NuvemMeet, início">
-        <Logo />
+      <Link href="/" aria-label="NuvLink, início">
+        <BrandLogo />
       </Link>
       <div className="page-intro">
         <span className="eyebrow">Privacidade por padrão</span>
         <h1>Seus dados têm um propósito.</h1>
         <p className="muted">
-          Informações claras sobre o uso dos dados no NuvemMeet.
+          Informações claras sobre o uso dos dados no NuvLink.
         </p>
       </div>
       <section className="card stack">
@@ -36,7 +36,7 @@ export default function Privacy() {
           pagamentos e recebe o e-mail da conta e os dados necessários ao
           pagamento Pix. Não coletamos ou armazenamos dados de cartão. A conta
           de cliente é gratuita; valores de serviços agendados não são cobrados
-          pelo NuvemMeet.
+          pelo NuvLink.
         </p>
         <p>
           Avaliações são opcionais e exigem um atendimento concluído. A nota, o
@@ -51,7 +51,7 @@ export default function Privacy() {
           Você acessa seu perfil e suas reservas. A empresa recebe seu nome e os
           detalhes dos agendamentos realizados com ela, sem acesso ao seu
           e-mail, seu perfil ou reservas de outras empresas. O responsável pelo
-          NuvemMeet tem acesso administrativo para operar o serviço e atender
+          NuvLink tem acesso administrativo para operar o serviço e atender
           solicitações de privacidade.
         </p>
         <p>

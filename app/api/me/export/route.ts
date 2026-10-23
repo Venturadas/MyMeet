@@ -31,7 +31,7 @@ export async function GET() {
   return NextResponse.json(data, {
     headers: {
       ...headers,
-      "Content-Disposition": 'attachment; filename="nuvemmeet-meus-dados.json"',
+      "Content-Disposition": 'attachment; filename="nuvlink-meus-dados.json"',
     },
   });
 }

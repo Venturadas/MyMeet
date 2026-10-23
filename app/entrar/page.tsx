@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Logo } from "@/components/ui";
+import { BrandLogo } from "@/components/brand-logo";
 import { signIn, signUp, sendReset } from "@/lib/actions";
 import { isConfigured, isRegistrationOpen } from "@/lib/supabase";
 import { Notices } from "@/components/notices";
@@ -20,11 +20,11 @@ export default async function SignIn({
 
   return (
     <main id="main" className="container auth-shell stack">
-      <Link className="brand-link" href="/" aria-label="NuvemMeet, início">
-        <Logo />
+      <Link className="brand-link" href="/" aria-label="NuvLink, início">
+        <BrandLogo />
       </Link>
       <div className="page-intro">
-        <h1>Entre no NuvemMeet</h1>
+        <h1>Entre no NuvLink</h1>
         <p className="muted">Agende um serviço ou cuide da sua empresa.</p>
       </div>
       <Notices params={params} />

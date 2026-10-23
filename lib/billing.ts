@@ -260,7 +260,7 @@ export async function startBusinessPix(user: {
     "/v1/payments",
     {
       transaction_amount: BUSINESS_PRICE_CENTS / 100,
-      description: "NuvemMeet — plano empresa por 30 dias",
+      description: "NuvLink — plano empresa por 30 dias",
       payment_method_id: "pix",
       payer: { email: user.email },
       external_reference: checkout.id,
@@ -294,7 +294,7 @@ export async function processMercadoPagoNotification(id: string) {
       : payment.id;
   if (actualId !== id) throw new Error("invalid_payment");
   // The merchant may receive notifications from other integrations too.
-  // A payment without our durable UUID cannot activate a NuvemMeet plan.
+  // A payment without our durable UUID cannot activate a NuvLink plan.
   if (!validCheckoutId(payment.external_reference)) return;
   await reconcile(payment, merchantId);
 }

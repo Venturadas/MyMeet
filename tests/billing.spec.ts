@@ -59,14 +59,14 @@ test("webhook autentica o ID assinado, rejeita adulteração e replay fora de ci
   const ts = String(now / 1000);
   const digest = createHmac("sha256", secret).update(`id:789;request-id:request_123;ts:${ts};`).digest("hex");
   const headers = new Headers({ "x-request-id": "request_123", "x-signature": `ts=${ts},v1=${digest}` });
-  const url = new URL("https://nuvemmeet.example/api/billing/webhook?data.id=789&type=payment");
+  const url = new URL("https://nuvlink.example/api/billing/webhook?data.id=789&type=payment");
   expect(verifyMercadoPagoSignature(url, headers, secret, now)).toBe("789");
   expect(verifyMercadoPagoSignature(url, headers, secret, now + 300_001)).toBeNull();
   expect(verifyMercadoPagoSignature(url, headers, secret, now - 300_001)).toBeNull();
   expect(verifyMercadoPagoSignature(url, headers, "wrong-secret", now)).toBeNull();
   expect(verifyMercadoPagoSignature(url, headers, "", now)).toBeNull();
   for (const query of ["data.id=790", "data.id=789&data.id=789", "data.id=789&data.id=790", "data.id=../users/me", "data.id=789a", "id=789", "data.id=0"]) {
-    expect(verifyMercadoPagoSignature(new URL(`https://nuvemmeet.example/?${query}`), headers, secret, now)).toBeNull();
+    expect(verifyMercadoPagoSignature(new URL(`https://nuvlink.example/?${query}`), headers, secret, now)).toBeNull();
   }
   for (const signature of [`ts=${ts},v1=${digest},v1=${digest}`, `ts=${ts},v1=not-hex`, `ts=${ts}`, `v1=${digest}`, `ts=${ts},ts=${ts},v1=${digest}`]) {
     const tampered = new Headers(headers); tampered.set("x-signature", signature);
@@ -81,8 +81,8 @@ test("webhook autentica o ID assinado, rejeita adulteração e replay fora de ci
 });
 
 test("origem e ticket de pagamento rejeitam protocolos, usuários e domínios indevidos", () => {
-  expect(trustedBillingOrigin("https://nuvemmeet.example/")).toBe("https://nuvemmeet.example");
-  for (const value of ["http://nuvemmeet.example", "https://user@nuvemmeet.example", "https://nuvemmeet.example:444", "https://nuvemmeet.example/path", "https://nuvemmeet.example/?query=1", "https://nuvemmeet.example/#hash", undefined]) expect(trustedBillingOrigin(value)).toBeNull();
+  expect(trustedBillingOrigin("https://nuvlink.example/")).toBe("https://nuvlink.example");
+  for (const value of ["http://nuvlink.example", "https://user@nuvlink.example", "https://nuvlink.example:444", "https://nuvlink.example/path", "https://nuvlink.example/?query=1", "https://nuvlink.example/#hash", undefined]) expect(trustedBillingOrigin(value)).toBeNull();
   expect(safePixTicketUrl("https://www.mercadopago.com.br/payments/789/ticket")).toBe("https://www.mercadopago.com.br/payments/789/ticket");
   for (const value of ["https://www.mercadopago.com.br.evil.example/payments/789/ticket", "javascript:alert(1)", "https://user@www.mercadopago.com.br/payments/789/ticket", "https://www.mercadopago.com.br/subscriptions/checkout", "http://www.mercadopago.com.br/payments/789/ticket", "/planos"]) expect(safePixTicketUrl(value)).toBeNull();
   for (const value of ["01", "0", "789a", "../payments/789", "1".repeat(21), 789]) expect(validPaymentId(value)).toBe(false);

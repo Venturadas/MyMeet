@@ -44,7 +44,7 @@ export default async function Plans({
       </div>
       <Notices params={params} />
       <section className="card stack plan-card" aria-labelledby="plan-title">
-        <h2 id="plan-title">NuvemMeet para empresas</h2>
+        <h2 id="plan-title">NuvLink para empresas</h2>
         <p className="plan-price">
           <strong>{money(BUSINESS_PRICE_CENTS)}</strong>{" "}
           <span>por 30 dias</span>

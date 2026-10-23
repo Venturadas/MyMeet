@@ -1,6 +1,8 @@
-# NuvemMeet
+# NuvLink
 
 SaaS de agendas para empresas e clientes. Next.js, TypeScript, Supabase e Mercado Pago. Interface em português, azul e branco, responsiva e sem demonstração ou dados simulados.
+
+NuvLink é a identidade oficial. A nuvem azul aprovada, as variantes da logo e as exceções técnicas estão documentadas em [docs/IDENTIDADE-NUVLINK.md](docs/IDENTIDADE-NUVLINK.md). O endereço publicado continua sendo https://nuvemmeet.vercel.app; a mudança de marca não altera URLs nem integrações.
 
 ## Uso
 
@@ -37,7 +39,7 @@ Sem configuração do banco, as rotas públicas indicam indisponibilidade e as a
 
 ## Banco e pagamentos
 
-Aplique `supabase/migrations/` em ordem de nome. No projeto hospedado, as três primeiras migrations (estrutura, expediente atômico e assinaturas) já foram aplicadas e não devem ser reaplicadas. A migration `202610140001_profiles_reviews.sql` acrescenta os recursos de perfis, avaliações e mídia sem recriar contas ou conceder assinatura. Revise compatibilidade antes de usar outro projeto. A migration de assinaturas mantém dados existentes e não concede acesso pago automaticamente.
+Em um banco novo e descartável, aplique `supabase/migrations/` em ordem de nome. No projeto hospedado atual, as quatro migrações existentes (estrutura, expediente atômico, assinaturas e `202610140001_profiles_reviews.sql`) já foram aplicadas e não devem ser reaplicadas. O histórico de migrações registrado pode estar vazio apesar de a estrutura existir; isso não autoriza reaplicar SQL. Verifique o esquema real e reconcilie o histórico antes de qualquer evolução. A migração de perfis acrescentou avaliações e mídia sem recriar contas ou conceder assinatura; a de assinaturas preservou dados sem liberar acesso pago automaticamente.
 
 RLS protege contas/empresas/agendamentos. Assinaturas são consultáveis apenas pelo próprio usuário; o ledger financeiro é privado. Somente o backend privilegiado pode aplicar uma cobrança verificada. Intents persistentes, transações únicas, bloqueios e deduplicação impedem que retries acrescentem dias ou que o navegador marque um Pix como pago.
 

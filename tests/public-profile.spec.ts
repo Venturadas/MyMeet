@@ -73,11 +73,11 @@ test("contatos públicos usam apenas telefone e destinos fixos de WhatsApp e Ins
   const valid = profile({
     phone: "(11) 91234-5678",
     whatsapp: "5511912345678",
-    instagram: "@nuvemmeet",
+    instagram: "@nuvlink",
   });
   expect(valid).toContain('href="tel:+5511912345678"');
   expect(valid).toContain('href="https://wa.me/5511912345678"');
-  expect(valid).toContain('href="https://www.instagram.com/nuvemmeet/"');
+  expect(valid).toContain('href="https://www.instagram.com/nuvlink/"');
   for (const instagram of [
     "javascript:alert(1)",
     "https://instagram.com.evil.invalid/user",

@@ -12,9 +12,6 @@ const config: NextConfig = {
   images: {
     remotePatterns: companyImageOrigin ? [{ protocol: "https", hostname: companyImageOrigin.hostname, port: companyImageOrigin.port, pathname: "/storage/v1/object/public/company-images/**", search: "" }] : [],
   },
-  async redirects() {
-    return [{ source: "/favicon.ico", destination: "/icon", permanent: false }];
-  },
   async headers() {
     return [
       {

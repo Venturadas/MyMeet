@@ -25,16 +25,20 @@ test("links de acesso inválidos ficam no site e não podem ser armazenados", as
   }
 });
 
-test("páginas públicas usam NuvemMeet e não oferecem demonstração", async ({
+test("páginas públicas usam NuvLink e não oferecem demonstração", async ({
   page,
 }) => {
   for (const path of publicPaths) {
     await page.goto(path);
-    await expect(page).toHaveTitle(/NuvemMeet/);
+    await expect(page).toHaveTitle(/NuvLink/);
     await expect(page.locator("h1")).toHaveCount(1);
     await expect(page.locator("body")).not.toContainText(
-      /MyMeet|demonstração|dados fictícios/i,
+      /Nuvem\s*Meet|My\s*Meet|demonstração|dados fictícios/i,
     );
+    const accessibleNames = await page.locator("[aria-label], img[alt]").evaluateAll((nodes) =>
+      nodes.map((node) => `${node.getAttribute("aria-label") || ""} ${node.getAttribute("alt") || ""}`).join(" "),
+    );
+    expect(accessibleNames).not.toMatch(/Nuvem\s*Meet|My\s*Meet/i);
     await expect(page.locator('a[href^="/demo"]')).toHaveCount(0);
   }
   const response = await page.goto("/demo");

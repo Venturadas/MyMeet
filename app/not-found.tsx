@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { Logo } from "@/components/ui";
+import { BrandLogo } from "@/components/brand-logo";
 export default function NotFound() {
   return (
     <main id="main" className="container workspace stack">
-      <Link className="brand-link" href="/" aria-label="NuvemMeet, início">
-        <Logo />
+      <Link className="brand-link" href="/" aria-label="NuvLink, início">
+        <BrandLogo />
       </Link>
       <h1>Página não encontrada.</h1>
       <p className="muted">

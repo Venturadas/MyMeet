@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 
 export default async function Icon() {
   const image = await readFile(
-    join(process.cwd(), "public/brand/nuvemmeet-icon.png"),
+    join(process.cwd(), "public/brand/icon-32.png"),
   );
   return new ImageResponse(
     (

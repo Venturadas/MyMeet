@@ -1,11 +1,11 @@
 "use client";
 import Link from "next/link";
-import { Logo } from "@/components/ui";
+import { BrandLogo } from "@/components/brand-logo";
 export default function ErrorPage({ retry }: { retry: () => void }) {
   return (
     <main id="main" className="container workspace stack">
-      <Link className="brand-link" href="/" aria-label="NuvemMeet, início">
-        <Logo />
+      <Link className="brand-link" href="/" aria-label="NuvLink, início">
+        <BrandLogo />
       </Link>
       <h1>Não foi possível carregar a página.</h1>
       <p className="muted">Tente novamente em instantes.</p>

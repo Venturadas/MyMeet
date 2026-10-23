@@ -1,5 +1,5 @@
 {
-  "name": "nuvemmeet-database-security-tests",
+  "name": "nuvlink-database-security-tests",
   "private": true,
   "scripts": {
     "test": "bash ./run-local.sh"

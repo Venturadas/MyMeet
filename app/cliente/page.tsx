@@ -726,7 +726,7 @@ async function Settings({
             <form className="stack" action={changeCustomerEmail}>
               <p className="muted">
                 E-mail atual: {email || "Indisponível"}. Confirme a mudança nos
-                e-mails enviados pelo NuvemMeet.
+                e-mails enviados pelo NuvLink.
               </p>
               <label className="field">
                 Novo e-mail

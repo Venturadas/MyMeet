@@ -1,4 +1,6 @@
-# Banco de dados do NuvemMeet
+# Banco de dados do NuvLink
+
+A mudança de marca para NuvLink preserva os identificadores técnicos existentes. No projeto hospedado atual, as quatro migrações de `migrations/` já foram aplicadas. Um registro de histórico vazio não significa banco vazio: confira a estrutura real e não reaplique essas migrações. As instruções de aplicação abaixo servem para bancos novos; operações no banco existente exigem verificação prévia. Consulte [a identidade e suas exceções técnicas](../docs/IDENTIDADE-NUVLINK.md).
 
 Em um projeto Supabase novo, aplique os arquivos `migrations/*.sql` em ordem pelo SQL Editor ou use `supabase db push` após vincular o projeto. Em projetos já configurados, aplique somente as migrações pendentes. As migrações são transacionais e não contêm dados nem credenciais. Se houver objetos com os mesmos nomes, revise a compatibilidade antes de aplicar. Não execute os testes de fixtures em um projeto real.
 

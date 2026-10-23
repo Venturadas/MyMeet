@@ -1,10 +1,10 @@
-# Pagamentos do NuvemMeet
+# Pagamentos do NuvLink
 
 O plano empresa custa **R$ 14,99 por 30 dias**, pago por **Pix** no Mercado Pago. Clientes agendam gratuitamente. Nesta versão a renovação é manual: não há débito automático, cartão cadastrado nem assinatura recorrente do Mercado Pago. Ao vencer, o banco suspende o painel da empresa e novas reservas, preservando os agendamentos existentes.
 
 ## Ativação em produção
 
-1. Aplique as migrations na ordem e execute os testes de banco antes de habilitar cobranças.
+1. Em banco novo, aplique as migrações na ordem e execute os testes de banco antes de habilitar cobranças. No projeto hospedado atual, as quatro migrações existentes já foram aplicadas: verifique a estrutura real e não as reaplique, mesmo que o registro do histórico esteja vazio.
 2. Crie/acesse a aplicação de produção na sua própria conta Mercado Pago e habilite Pix para o recebimento. O cadastro da conta recebedora e sua chave Pix devem estar regulares no Mercado Pago.
 3. Cadastre o webhook HTTPS `https://SEU-DOMINIO/api/billing/webhook`, com o evento **Pagamentos**. Guarde a chave secreta de assinatura fornecida pelo Mercado Pago.
 4. Configure apenas no servidor/Vercel: `MERCADO_PAGO_ACCESS_TOKEN`, `MERCADO_PAGO_WEBHOOK_SECRET` e `SUPABASE_SERVICE_ROLE_KEY`. Nenhuma dessas variáveis pode começar com `NEXT_PUBLIC_`, ir para Git, chats ou arquivos públicos. As credenciais de acesso devem pertencer à mesma conta recebedora.

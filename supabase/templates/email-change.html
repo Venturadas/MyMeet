@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="pt-BR">
-  <body style="margin:0;padding:32px 16px;background:#eef5ff;color:#17335c;font-family:Arial,sans-serif">
+  <body style="margin:0;padding:32px 16px;background:#eaf4ff;color:#0b2d6b;font-family:Arial,sans-serif">
     <main style="max-width:480px;margin:auto;padding:32px;background:#fff;border-radius:24px">
-      <p style="font-size:22px;font-weight:bold;color:#2563eb">NuvemMeet</p>
+      <p style="margin:0 0 28px;font-size:24px;font-weight:bold;line-height:40px;color:#0b2d6b"><img src="https://nuvemmeet.vercel.app/brand/logo-icon.png" alt="" width="40" height="40" style="display:inline-block;vertical-align:middle;width:40px;height:40px;border:0;margin-right:10px">Nuv<span style="color:#2f80ff">Link</span></p>
       <h1 style="font-size:24px">Confirme a alteração de e-mail</h1>
       <p style="line-height:1.6">Você solicitou usar {{ .NewEmail }} para acessar sua conta. Confirme a alteração pelo botão abaixo.</p>
-      <p style="margin:28px 0"><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email_change&amp;redirect_to={{ .RedirectTo | urlquery }}" style="display:inline-block;padding:14px 22px;border-radius:999px;background:#2563eb;color:#fff;text-decoration:none;font-weight:bold">Confirmar alteração</a></p>
+      <p style="margin:28px 0"><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email_change&amp;redirect_to={{ .RedirectTo | urlquery }}" style="display:inline-block;padding:14px 22px;border-radius:999px;background:#0b2d6b;color:#fff;text-decoration:none;font-weight:bold">Confirmar alteração</a></p>
       <p style="font-size:14px;line-height:1.6">Por segurança, confirme os links enviados ao endereço atual e ao novo endereço. O link é pessoal e pode ser usado uma vez. Se você não solicitou a alteração, não confirme e revise a segurança da sua conta.</p>
     </main>
   </body>

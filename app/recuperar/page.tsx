@@ -6,7 +6,7 @@ import { resetPassword } from "@/lib/actions";
 import { hasRecoveryGrantForAuthenticatedUser } from "@/lib/auth-recovery";
 import { Notices } from "@/components/notices";
 import Link from "next/link";
-import { Logo } from "@/components/ui";
+import { BrandLogo } from "@/components/brand-logo";
 export default async function Recover({
   searchParams,
 }: {
@@ -22,12 +22,12 @@ export default async function Recover({
     redirect("/entrar?form=recovery&next=%2Frecuperar&error=Solicite+um+novo+link+de+recupera%C3%A7%C3%A3o+para+definir+outra+senha.");
   return (
     <main id="main" className="container auth-shell stack">
-      <Link className="brand-link" href="/" aria-label="NuvemMeet, início">
-        <Logo />
+      <Link className="brand-link" href="/" aria-label="NuvLink, início">
+        <BrandLogo />
       </Link>
       <div className="page-intro">
         <h1>Defina uma nova senha</h1>
-        <p className="muted">Use uma senha exclusiva para o NuvemMeet.</p>
+        <p className="muted">Use uma senha exclusiva para o NuvLink.</p>
       </div>
       <Notices params={await searchParams} />
       <form className="stack" action={resetPassword}>

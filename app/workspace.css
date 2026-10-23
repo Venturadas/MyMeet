@@ -43,8 +43,8 @@
   text-decoration: none;
 }
 .workspace-menu a[aria-current="page"] {
-  color: var(--blue-dark);
-  background: #edf5ff;
+  color: var(--brand-dark);
+  background: var(--brand-soft);
   font-weight: 600;
 }
 .workspace-menu-marker {
@@ -183,12 +183,12 @@
 .company-review-distribution progress {
   width: 100%;
   height: 8px;
-  accent-color: var(--blue);
+  accent-color: var(--brand-action);
 }
 .company-review-distribution meter {
   width: 100%;
   height: 10px;
-  accent-color: var(--blue);
+  accent-color: var(--brand-action);
 }
 .company-review-distribution {
   flex: 1 1 220px;
@@ -251,8 +251,8 @@
 .company-agenda-filter a[aria-current="page"],
 .customer-tabs a[aria-current="page"],
 .customer-history-filter a[aria-current="page"] {
-  background: #edf5ff;
-  color: var(--blue-dark);
+  background: var(--brand-soft);
+  color: var(--brand-dark);
   font-weight: 600;
 }
 .company-profile-media,
@@ -324,8 +324,8 @@
 .media-fallback {
   display: grid;
   place-items: center;
-  background: #edf5ff;
-  color: var(--blue-dark);
+  background: var(--brand-soft);
+  color: var(--brand-dark);
   font-weight: 700;
   border-radius: 14px;
 }
@@ -359,8 +359,8 @@
   border: 0;
   border-radius: 8px;
   padding: 6px 10px;
-  color: var(--blue-dark);
-  background: #edf5ff;
+  color: var(--brand-dark);
+  background: var(--brand-soft);
 }
 .media-hint {
   color: var(--muted);
@@ -607,7 +607,7 @@
   cursor: pointer;
 }
 .review-stars input {
-  accent-color: var(--blue);
+  accent-color: var(--brand-action);
 }
 .settings-column {
   max-width: 640px;
@@ -675,8 +675,8 @@
   font-size: 0.85rem;
 }
 .section-tabs a[aria-current="page"] {
-  color: var(--blue-dark);
-  background: #edf5ff;
+  color: var(--brand-dark);
+  background: var(--brand-soft);
   font-weight: 600;
 }
 .customer-review-details,

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Logo } from "@/components/ui";
+import { BrandLogo } from "@/components/brand-logo";
 import { signOut } from "@/lib/actions";
 
 type Workspace = "cliente" | "empresa";
@@ -75,8 +75,8 @@ export function AppShell({
     <>
       <header className="app-header">
         <nav className="container app-nav" aria-label="Navegação principal">
-          <Link className="brand-link" href="/" aria-label="NuvemMeet, início">
-            <Logo />
+          <Link className="brand-link" href="/" aria-label="NuvLink, início">
+            <BrandLogo />
           </Link>
           <div
             className={`nav-links${authenticated ? " nav-authenticated" : ""}`}
@@ -128,6 +128,9 @@ export function AppShell({
       {workspace ? (
         <div className="container workspace workspace-grid">
           <aside className="workspace-sidebar">
+            <Link className="brand-link workspace-brand" href="/" aria-label="NuvLink, início">
+              <BrandLogo variant="light" />
+            </Link>
             <p className="workspace-label">
               {workspace === "empresa" ? "Minha empresa" : "Minha conta"}
             </p>
@@ -164,7 +167,7 @@ export function AppShell({
         </main>
       )}
       <footer className="container footer">
-        <span>NuvemMeet</span>
+        <BrandLogo variant="light" />
         <Link href="/privacidade">Privacidade e seus dados</Link>
       </footer>
     </>

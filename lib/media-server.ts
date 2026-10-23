@@ -16,7 +16,7 @@ export function assertMediaOrigin(request: Request) {
   try {
     const canonical = new URL(expected);
     if (!source || new URL(source).origin !== canonical.origin || (process.env.NODE_ENV === "production" && canonical.protocol !== "https:") || request.headers.get("sec-fetch-site") === "cross-site") throw new Error("origin");
-  } catch { throw new MediaError("Abra o NuvemMeet novamente para enviar a imagem.", 403); }
+  } catch { throw new MediaError("Abra o NuvLink novamente para enviar a imagem.", 403); }
 }
 export function parseMediaKind(value: unknown): MediaKind {
   if (typeof value !== "string" || !MEDIA_KINDS.includes(value as MediaKind)) throw new MediaError("Escolha o tipo de imagem.");

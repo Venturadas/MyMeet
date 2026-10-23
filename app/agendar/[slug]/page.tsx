@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { Logo } from "@/components/ui";
+import { BrandLogo } from "@/components/brand-logo";
 import { MediaImage } from "@/components/media-image";
 import { PublicRating } from "@/components/public-rating";
 import { PublicFavorite } from "@/components/public-favorite";
@@ -28,8 +28,8 @@ export const metadata: Metadata = { title: "Perfil da empresa e agendamentos" };
 function UnavailableAgenda() {
   return (
     <main id="main" className="container workspace stack">
-      <Link href="/" aria-label="NuvemMeet, início">
-        <Logo />
+      <Link href="/" aria-label="NuvLink, início">
+        <BrandLogo />
       </Link>
       <h1>Agenda indisponível</h1>
       <p className="notice error" role="alert">
@@ -162,8 +162,8 @@ export default async function Booking({
   return (
     <main id="main" className="container workspace stack public-profile">
       <nav className="inline between">
-        <Link href="/" aria-label="NuvemMeet, início">
-          <Logo />
+        <Link href="/" aria-label="NuvLink, início">
+          <BrandLogo />
         </Link>
         <div className="inline">
           <Link href="/empresas">Encontrar empresas</Link>

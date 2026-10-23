@@ -91,7 +91,12 @@ async function main() {
   const migrationsDir = path.join(__dirname, '../migrations');
   const migrations = readdirSync(migrationsDir).filter(name => name.endsWith('.sql')).sort();
   check(migrations.length > 0, 'At least one migration must be present');
-  for (const migration of migrations) await admin.query(readFileSync(path.join(migrationsDir, migration), 'utf8'));
+  for (const migration of migrations) {
+    const migrationSql = readFileSync(path.join(migrationsDir, migration), 'utf8');
+    if (migration.endsWith('_nuvlink_subscription_messages.sql')) {
+      await require('./brand-messages.cjs')({admin,as,user:existingUsers[0],check,equal,migrationSql});
+    } else await admin.query(migrationSql);
+  }
   equal((await as(existingUsers[0],'select display_name from public.profiles')).rows[0].display_name,'Cliente Existente','Migration backfills existing auth accounts');
   equal((await as(existingUsers[1],'select display_name from public.profiles')).rows[0].display_name,'Cliente','Existing empty display name uses safe fallback');
   for (const [key, id] of Object.entries(ids)) {
