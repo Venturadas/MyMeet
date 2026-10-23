@@ -1,5 +1,7 @@
 # Revisão de prontidão — 23/10/2026
 
+**Atualização posterior à revisão:** o titular autorizou aplicar e publicar as correções. O PR #1 foi integrado à `main`, a migração nova foi aplicada uma única vez e a produção foi verificada. O registro está em [PUBLICACAO-2026-10-23.md](PUBLICACAO-2026-10-23.md). O diagnóstico abaixo preserva o estado da revisão anterior à autorização; a publicação não encerra as pendências de recuperação real, Pix e homologação conectada.
+
 **Parecer: não pronto para prontidão comercial comprovada.** Há correções verificáveis e uma release preparada para revisão, mas a recuperação dos dados reais, o Pix/webhook bancário e fluxos autenticados hospedados nesta revisão continuam sem validação completa. Não houve cobrança, pagamento, reaplicação de migração nem alteração de registros reais nesta preparação.
 
 ## Escopo e linha de base

@@ -43,7 +43,7 @@ Sem configuração do banco, as rotas públicas indicam indisponibilidade e as a
 
 Em um banco novo e descartável, aplique `supabase/migrations/` em ordem de nome. No projeto hospedado atual, as quatro migrações existentes (estrutura, expediente atômico, assinaturas e `202610140001_profiles_reviews.sql`) já foram aplicadas e não devem ser reaplicadas. O histórico de migrações registrado pode estar vazio apesar de a estrutura existir; isso não autoriza reaplicar SQL. Verifique o esquema real e reconcilie o histórico antes de qualquer evolução. A migração de perfis acrescentou avaliações e mídia sem recriar contas ou conceder assinatura; a de assinaturas preservou dados sem liberar acesso pago automaticamente.
 
-A candidata de prontidão acrescenta `20261023175308_existing_appointment_access.sql`, ainda não aplicada em produção, para o contexto mínimo da própria agenda após expirar. Aplique somente essa evolução nova após revisão, antes do código que a utiliza; não reaplique a estrutura histórica.
+A migração `20261023175308_existing_appointment_access.sql` foi aplicada em produção em 23/10/2026, após autorização do titular, para o contexto mínimo da própria agenda após expirar. Sua versão já consta no histórico hospedado; não a reaplique nem reaplique a estrutura histórica. A publicação e suas verificações estão em [docs/PUBLICACAO-2026-10-23.md](docs/PUBLICACAO-2026-10-23.md).
 
 RLS protege contas/empresas/agendamentos. Assinaturas são consultáveis apenas pelo próprio usuário; o ledger financeiro é privado. Somente o backend privilegiado pode aplicar uma cobrança verificada. Intents persistentes, transações únicas, bloqueios e deduplicação impedem que retries acrescentem dias ou que o navegador marque um Pix como pago.
 
